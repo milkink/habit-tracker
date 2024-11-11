@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Micro-Habit Builder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h2>Welcome, {{ current_user.username }}!</h2>
+        <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+    </div>
+    
+    <!-- Habit Form -->
+    <div class="habit-form-container">
+        <form id="habit-form">
+            <input type="text" id="habit-name" placeholder="Habit Name" required>
+            <input type="text" id="habit-frequency" placeholder="Frequency (e.g., Daily)" required>
+            <button type="submit" class="add-habit-btn">Add Habit</button>
+        </form>
+    </div>
+
+    <!-- Your Habits -->
+    <h2>Your Habits</h2>
+    <ul id="habit-list"></ul>
+
+    
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

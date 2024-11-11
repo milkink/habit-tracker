@@ -1,0 +1,156 @@
+/* General Styles */
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+}
+
+/* Welcome Header */
+.welcome-header {
+    display: flex;
+    justify-content: space-between; /* Align the items to the left and right */
+    align-items: center;
+    background-color: #1fc76b; /* Set the background color for the header */
+    padding: 10px 20px;
+    margin-bottom: 20px;
+}
+
+.welcome-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.logout-link {
+    font-size: 16px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.logout-link:hover {
+    text-decoration: underline;
+}
+
+.logout-btn {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.logout-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Habit Form */
+.habit-form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start; /* Align fields to the left */
+    margin-bottom: 20px;
+    width: 100%;
+    padding-left: 20px;  /* Add left padding to the form container */
+}
+
+#habit-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Ensure the form takes up full width */
+    align-items: flex-start; /* Ensure form elements are left-aligned */
+}
+
+#habit-form input {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    width: 250px; /* Set a shorter width for input fields */
+    box-sizing: border-box; /* Ensures padding is included in width calculation */
+}
+
+#habit-form button {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+    width: 250px; /* Make the button the same width as the input fields */
+}
+
+#habit-form button:hover {
+    background-color: #218838;
+}
+
+/* Habit List */
+ul {
+    list-style-type: none;
+    padding: 0;
+    width: 100%;
+    max-width: 500px;
+    margin: 20px 0;
+}
+
+ul li {
+    background-color: #fff;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box; /* Include padding in the width calculation */
+}
+
+/* Remove Habit Button */
+.remove-habit-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.remove-habit-btn:hover {
+    background-color: #c82333;
+}
+
+/* Log Out Button */
+.logout-btn {
+    display: block;
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.logout-btn:hover {
+    background-color: #0056b3;
+}
+
+/* For the Habit Section: Make the "Your Habits" Section Left-Aligned */
+.your-habits-section {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding-left: 10px;
+}
+
+.your-habits-section h2 {
+    text-align: left; /* Align the title to the left */
+    margin-bottom: 15px;
+}
