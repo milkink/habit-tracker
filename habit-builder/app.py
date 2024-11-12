@@ -116,6 +116,7 @@ def init_db():
         habit_frequency TEXT NOT NULL,
         is_completed INTEGER DEFAULT 0,
         streak INTEGER DEFAULT 0,
+        last_completed DATE,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
     """)
@@ -164,36 +165,50 @@ def remove_habit(habit_id):
     return {'message': 'Habit removed successfully!'}
 
 # Add a new route for updating habit completion and calculating streak
+from datetime import datetime, timedelta
+
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
 @login_required
 def update_habit_completion(habit_id):
     is_completed = request.json['is_completed']
 
-    # Update the habit's completion status
     conn = connect_db()
     cursor = conn.cursor()
-
-    # Fetch the current completion status to update streak
     cursor.execute("SELECT * FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
     habit = cursor.fetchone()
 
     if habit:
-        # Update completion status
-        cursor.execute("UPDATE habits SET is_completed = ? WHERE id = ? AND user_id = ?",
-                       (1 if is_completed else 0, habit_id, current_user.id))
-        
-        # Update streak if habit is completed
-        if is_completed:
-            cursor.execute("UPDATE habits SET streak = streak + 1 WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
-        else:
-            cursor.execute("UPDATE habits SET streak = 0 WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+        last_completed = habit[6]  # Assuming last_completed is the 7th column in the table
+        current_date = datetime.now().date()
 
+        # Convert last_completed from string to date if it's not None
+        if last_completed:
+            last_completed = datetime.strptime(last_completed, '%Y-%m-%d').date()
+        
+        if is_completed:
+            if last_completed is None or current_date > last_completed:
+                # Check if completion is consecutive or a new start
+                if last_completed == current_date - timedelta(days=1):
+                    cursor.execute("UPDATE habits SET streak = streak + 1 WHERE id = ? AND user_id = ?", 
+                                   (habit_id, current_user.id))
+                else:
+                    cursor.execute("UPDATE habits SET streak = 1 WHERE id = ? AND user_id = ?", 
+                                   (habit_id, current_user.id))
+
+                # Update last_completed to today
+                cursor.execute("UPDATE habits SET last_completed = ?, is_completed = ? WHERE id = ? AND user_id = ?", 
+                               (current_date, 1, habit_id, current_user.id))
+        else:
+            cursor.execute("UPDATE habits SET is_completed = 0 WHERE id = ? AND user_id = ?", 
+                           (habit_id, current_user.id))
+        
         conn.commit()
         conn.close()
 
         return jsonify({'message': 'Habit completion status updated successfully!'})
 
     return jsonify({'message': 'Habit not found or you do not have access to this habit'}), 404
+
 
 # Function to get streak of a habit
 @app.route('/get_streak/<int:habit_id>', methods=['GET'])
@@ -234,3 +249,4 @@ def calculate_streak(habit_id):
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+
