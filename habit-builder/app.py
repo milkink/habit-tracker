@@ -81,7 +81,14 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')  # Render the dashboard page after login
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = ?", (current_user.id,))
+    habits = cursor.fetchall()
+    conn.close()
+
+    return render_template('dashboard.html', habits=habits)  # Pass habits to template
+
 
 # Logout route
 @app.route('/logout')
@@ -107,6 +114,8 @@ def init_db():
         user_id INTEGER NOT NULL,
         habit_name TEXT NOT NULL,
         habit_frequency TEXT NOT NULL,
+        is_completed INTEGER DEFAULT 0,
+        streak INTEGER DEFAULT 0,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
     """)
@@ -136,7 +145,7 @@ def add_habit():
 def get_habits():
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, habit_name, habit_frequency FROM habits WHERE user_id = ?", (current_user.id,))
+    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = ?", (current_user.id,))
     habits = cursor.fetchall()
     conn.close()
 
@@ -153,6 +162,74 @@ def remove_habit(habit_id):
     conn.close()
 
     return {'message': 'Habit removed successfully!'}
+
+# Add a new route for updating habit completion and calculating streak
+@app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
+@login_required
+def update_habit_completion(habit_id):
+    is_completed = request.json['is_completed']
+
+    # Update the habit's completion status
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    # Fetch the current completion status to update streak
+    cursor.execute("SELECT * FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+    habit = cursor.fetchone()
+
+    if habit:
+        # Update completion status
+        cursor.execute("UPDATE habits SET is_completed = ? WHERE id = ? AND user_id = ?",
+                       (1 if is_completed else 0, habit_id, current_user.id))
+        
+        # Update streak if habit is completed
+        if is_completed:
+            cursor.execute("UPDATE habits SET streak = streak + 1 WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+        else:
+            cursor.execute("UPDATE habits SET streak = 0 WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Habit completion status updated successfully!'})
+
+    return jsonify({'message': 'Habit not found or you do not have access to this habit'}), 404
+
+# Function to get streak of a habit
+@app.route('/get_streak/<int:habit_id>', methods=['GET'])
+@login_required
+def get_streak(habit_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT streak FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+    streak = cursor.fetchone()
+    conn.close()
+
+    if streak:
+        return jsonify({'streak': streak[0]})
+    else:
+        return jsonify({'message': 'Habit not found or you do not have access to this habit'}), 404
+
+# Function to calculate streak (you may want to add logic here depending on your app needs)
+@app.route('/calculate_streak/<int:habit_id>', methods=['GET'])
+@login_required
+def calculate_streak(habit_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT streak, is_completed FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+    habit = cursor.fetchone()
+    conn.close()
+
+    if habit:
+        streak, is_completed = habit
+        if is_completed:
+            return jsonify({'streak': streak})
+        else:
+            # If the habit was not completed, reset the streak
+            return jsonify({'streak': 0})
+    else:
+        return jsonify({'message': 'Habit not found or you do not have access to this habit'}), 404
+
 
 if __name__ == '__main__':
     init_db()
