@@ -12,14 +12,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 habitList.innerHTML = '';
                 data.habits.forEach(habit => {
                     const li = document.createElement('li');
-                    li.textContent = `${habit[1]} - ${habit[2]}`;
+                    li.textContent = `${habit[1]} - ${habit[2]} - Streak: ${habit[4]}`;
 
                     // Create remove button
                     const removeButton = document.createElement('button');
                     removeButton.textContent = 'Remove';
                     removeButton.onclick = () => removeHabit(habit[0]);
 
-                    // Append remove button to list item
+                    // Create checkbox
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = habit[3] === 1;
+                    checkbox.addEventListener('change', () => updateHabitCompletion(habit[0], checkbox.checked));
+
+                    // Append elements to list item
+                    li.prepend(checkbox);
                     li.appendChild(removeButton);
                     habitList.appendChild(li);
                 });
@@ -32,8 +39,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Handle form submission
     form.addEventListener('submit', function (event) {
         event.preventDefault();
-        const habitName = habitNameInput.value;
-        const habitFrequency = habitFrequencyInput.value;
+        const habitName = habitNameInput.value.trim();
+        const habitFrequency = habitFrequencyInput.value.trim();
+
+        if (!habitName || !habitFrequency) {
+            alert('Please fill out both fields.');
+            return;
+        }
 
         // Send the new habit to the backend
         fetch('/add_habit', {
@@ -51,6 +63,22 @@ document.addEventListener('DOMContentLoaded', function () {
             habitFrequencyInput.value = '';
         });
     });
+
+    // Function to update habit completion
+    function updateHabitCompletion(habitId, isCompleted) {
+        fetch(`/update_habit_completion/${habitId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_completed: isCompleted })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            fetchHabits();  // Refresh the list of habits
+        });
+    }
 
     // Function to remove a habit
     function removeHabit(habitId) {
