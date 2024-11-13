@@ -112,15 +112,21 @@ def logout():
 @app.route('/add_habit', methods=['POST'])
 @login_required
 def add_habit():
-    habit_name = request.json['habit_name']
-    habit_frequency = request.json['habit_frequency']
-    
-    # Insert the habit into the database
-    new_habit = Habit(user_id=current_user.id, habit_name=habit_name, habit_frequency=habit_frequency)
-    db.session.add(new_habit)
-    db.session.commit()
+    try:
+        habit_name = request.json.get('habit_name')
+        habit_frequency = request.json.get('habit_frequency')
 
-    return {'message': 'Habit added successfully!'}
+        if not habit_name or not habit_frequency:
+            return jsonify({"error": "Habit name and frequency are required!"}), 400
+
+        # Insert the habit into the database
+        new_habit = Habit(user_id=current_user.id, habit_name=habit_name, habit_frequency=habit_frequency)
+        db.session.add(new_habit)
+        db.session.commit()
+
+        return jsonify({'message': 'Habit added successfully!'}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Display user's habits
 @app.route('/get_habits')
