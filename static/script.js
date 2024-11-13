@@ -120,30 +120,61 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         dayClick: function(date, jsEvent, view) {
             const selectedDate = date.format(); // Format date as 'YYYY-MM-DD'
-            // Show prompt to update habit status for that day
-            if (confirm("Update your habit status for " + selectedDate)) {
-                // Prompt for habit ID and completion status
-                let habitId = prompt("Enter Habit ID (this can be fetched dynamically)");
-                let isCompleted = confirm("Mark as completed?");
-
-                // Send this data to the backend to update habit completion for that date
-                fetch('/update_habit_status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        habit_id: habitId,
-                        completion_date: selectedDate,
-                        is_completed: isCompleted
-                    })
-                })
+            // Fetch habits for the selected date
+            fetch(`/habits_on_date/${selectedDate}`)
                 .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    $('#calendar').fullCalendar('refetchEvents'); // Re-fetch events after status update
+                .then(habits => {
+                    // Create the popup content
+                    let completedHabits = '';
+                    let notCompletedHabits = '';
+
+                    habits.forEach(habit => {
+                        if (habit.is_completed) {
+                            completedHabits += `<li>${habit.habit_name}</li>`;
+                        } else {
+                            notCompletedHabits += `<li>${habit.habit_name}</li>`;
+                        }
+                    });
+
+                    // Display the popup with habit information
+                    const popupContent = `
+                        <h3>Habits for ${selectedDate}</h3>
+                        <h4>Completed:</h4>
+                        <ul>${completedHabits || '<li>No habits completed</li>'}</ul>
+                        <h4>Not Completed:</h4>
+                        <ul>${notCompletedHabits || '<li>No habits pending</li>'}</ul>
+                    `;
+
+                    // Create a modal or popup element
+                    const popup = document.createElement('div');
+                    popup.classList.add('habit-popup');
+                    popup.innerHTML = popupContent;
+
+                    // Close button for the popup
+                    const closeButton = document.createElement('button');
+                    closeButton.textContent = 'Close';
+                    closeButton.onclick = () => {
+                        popup.style.display = 'none'; // Close the popup
+                    };
+
+                    popup.appendChild(closeButton);
+
+                    // Append the popup to the body
+                    document.body.appendChild(popup);
+
+                    // Style the popup
+                    popup.style.position = 'fixed';
+                    popup.style.top = '50%';
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translate(-50%, -50%)';
+                    popup.style.padding = '20px';
+                    popup.style.backgroundColor = '#fff';
+                    popup.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+                    popup.style.zIndex = 1000;
+                })
+                .catch(error => {
+                    alert('Failed to fetch habits for this date.');
+                    console.error('Error fetching habits for the date:', error);
                 });
-            }
-        }
-    });
-});
+}
+
