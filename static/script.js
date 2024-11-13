@@ -150,12 +150,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     popup.classList.add('habit-popup');
                     popup.innerHTML = popupContent;
 
-                    // Close button for the popup
+                    // Create a close button for the popup
                     const closeButton = document.createElement('button');
                     closeButton.textContent = 'Close';
-                    closeButton.onclick = () => {
-                        popup.style.display = 'none'; // Close the popup
+                    closeButton.classList.add('popup-close-button');  // Add a class for styling or debugging
+
+                    // Close button event listener
+                    closeButton.onclick = function() {
+                        console.log('Closing the popup...');
+                        popup.style.display = 'none';  // Hide the popup
                     };
+
 
                     popup.appendChild(closeButton);
 
