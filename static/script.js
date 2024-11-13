@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     li.appendChild(removeButton);
                     habitList.appendChild(li);
                 });
+            })
+            .catch(error => {
+                console.error('Error fetching habits:', error);
             });
     }
 
@@ -61,6 +64,10 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchHabits();  // Refresh the list of habits
             habitNameInput.value = '';  // Clear input fields
             habitFrequencyInput.value = '';
+        })
+        .catch(error => {
+            alert('Error adding habit.');
+            console.error('Error adding habit:', error);
         });
     });
 
@@ -77,6 +84,10 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             alert(data.message);
             fetchHabits();  // Refresh the list of habits
+        })
+        .catch(error => {
+            alert('Error updating habit completion.');
+            console.error('Error updating habit completion:', error);
         });
     }
 
@@ -89,10 +100,14 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             alert(data.message);
             fetchHabits();  // Refresh the list of habits
+        })
+        .catch(error => {
+            alert('Error removing habit.');
+            console.error('Error removing habit:', error);
         });
     }
 
-    // Initialize FullCalendar
+    // Initialize FullCalendar (unchanged)
     $('#calendar').fullCalendar({
         events: function(start, end, timezone, callback) {
             $.ajax({
@@ -176,5 +191,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('Failed to fetch habits for this date.');
                     console.error('Error fetching habits for the date:', error);
                 });
-}
-
+        }
+    });
+});
