@@ -47,6 +47,10 @@ class HabitCompletion(db.Model):
     completion_date = db.Column(db.Date, nullable=False)
     is_completed = db.Column(db.Boolean, nullable=False)
 
+    # Define the relationship with Habit
+    habit = db.relationship('Habit', backref='habit_completions')
+
+
 # Initialize the database if needed
 with app.app_context():
     db.create_all()  # Creates tables based on defined models
