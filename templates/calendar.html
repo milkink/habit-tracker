@@ -116,66 +116,62 @@
             // Initialize FullCalendar
             $('#calendar').fullCalendar({
                 events: function(start, end, timezone, callback) {
+                    // This function will be used to get events for the calendar
                     $.ajax({
-                        url: '/habits_on_date/' + moment().format('YYYY-MM-DD'),
+                        url: '/get_habits',
                         dataType: 'json',
                         success: function(data) {
-                            var events = data.map(function(habit) {
-                                return {
-                                    title: habit[0] + ' - ' + (habit[1] ? 'Completed' : 'Not Completed'),
-                                    start: habit[2], // Habit completion date
-                                    allDay: true,
-                                    color: habit[1] ? 'green' : 'red' // Green for completed, red for not completed
-                                };
+                            var events = [];
+                            data.forEach(function(habit) {
+                                // Check if habit is completed and set color accordingly
+                                var eventColor = habit.is_completed ? 'green' : 'red';
+                                events.push({
+                                    title: habit.habit_name,
+                                    start: moment().format('YYYY-MM-DD'), // Placeholder for current date
+                                    backgroundColor: eventColor,
+                                    textColor: 'white',
+                                    description: habit.habit_name
+                                });
                             });
-                            callback(events);
+                            callback(events); // Provide events to FullCalendar
                         }
                     });
                 },
-                editable: true,
-                droppable: false,  // Disallow drag-and-drop
-                header: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'month,agendaWeek,agendaDay'
-                },
-                defaultView: 'month',  // Set the default view to "month"
                 dayClick: function(date, jsEvent, view) {
-                    const selectedDate = date.format(); // Format date as 'YYYY-MM-DD'
-                    // Show the habit details modal for the clicked date
-                    fetchHabitsForDate(selectedDate);
+                    var dateStr = date.format(); // Format the date as string
+                    fetchHabitsForDate(dateStr); // Fetch habits for clicked date
                 }
             });
-        });
 
-        function fetchHabitsForDate(date) {
-            // Fetch the habits for the selected date
-            $.ajax({
-                url: '/habits_on_date/' + date,
-                dataType: 'json',
-                success: function(data) {
-                    const habitList = document.getElementById('habit-list');
-                    habitList.innerHTML = '';  // Clear previous list
-                    if (data.length > 0) {
-                        data.forEach(habit => {
+            function fetchHabitsForDate(date) {
+                // Fetch the habits for the selected date
+                $.ajax({
+                    url: '/habits_on_date/' + date,
+                    dataType: 'json',
+                    success: function(data) {
+                        const habitList = document.getElementById('habit-list');
+                        habitList.innerHTML = '';  // Clear previous list
+                        if (data.length > 0) {
+                            data.forEach(habit => {
+                                const li = document.createElement('li');
+                                li.textContent = `${habit.habit_name}: ${habit.is_completed ? 'Completed' : 'Not Completed'}`;
+                                habitList.appendChild(li);
+                            });
+                        } else {
                             const li = document.createElement('li');
-                            li.textContent = `${habit.habit_name}: ${habit.is_completed ? 'Completed' : 'Not Completed'}`;
+                            li.textContent = 'No habits for this date.';
                             habitList.appendChild(li);
-                        });
-                    } else {
-                        const li = document.createElement('li');
-                        li.textContent = 'No habits for this date.';
-                        habitList.appendChild(li);
+                        }
+                        document.getElementById('modal-date').textContent = date;
+                        document.getElementById('habit-modal').style.display = 'block';
                     }
-                    document.getElementById('modal-date').textContent = date;
-                    document.getElementById('habit-modal').style.display = 'block';
-                }
-            });
-        }
+                });
+            }
 
-        function closeModal() {
-            document.getElementById('habit-modal').style.display = 'none';
-        }
+            function closeModal() {
+                document.getElementById('habit-modal').style.display = 'none';
+            }
+        });
     </script>
 
 </body>
