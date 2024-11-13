@@ -9,21 +9,21 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/get_habits')
             .then(response => response.json())
             .then(data => {
-                habitList.innerHTML = '';
-                data.habits.forEach(habit => {
+                habitList.innerHTML = ''; // Clear the list before adding new items
+                data.forEach(habit => {
                     const li = document.createElement('li');
-                    li.textContent = `${habit[1]} - ${habit[2]} - Streak: ${habit[4]}`;
+                    li.textContent = `${habit.habit_name} - ${habit.habit_frequency} - Streak: ${habit.streak}`;
 
                     // Create remove button
                     const removeButton = document.createElement('button');
                     removeButton.textContent = 'Remove';
-                    removeButton.onclick = () => removeHabit(habit[0]);
+                    removeButton.onclick = () => removeHabit(habit.id);
 
                     // Create checkbox
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
-                    checkbox.checked = habit[3] === 1;
-                    checkbox.addEventListener('change', () => updateHabitCompletion(habit[0], checkbox.checked));
+                    checkbox.checked = habit.is_completed;
+                    checkbox.addEventListener('change', () => updateHabitCompletion(habit.id, checkbox.checked));
 
                     // Append elements to list item
                     li.prepend(checkbox);
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch habits on page load
     fetchHabits();
 
-    // Handle form submission
+    // Handle form submission to add a new habit
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         const habitName = habitNameInput.value.trim();
@@ -96,15 +96,15 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#calendar').fullCalendar({
         events: function(start, end, timezone, callback) {
             $.ajax({
-                url: '/habits_on_date/' + '{{ current_user.id }}',  // Adjusted to fetch habits for a specific user
+                url: '/habits_on_date/' + current_user_id,  // Use the dynamic user ID
                 dataType: 'json',
                 success: function(data) {
                     var events = data.map(function(habit) {
                         return {
-                            title: habit[0] + ' - ' + (habit[1] ? 'Completed' : 'Not Completed'),
-                            start: habit[2], // Use the habit completion date
+                            title: habit.habit_name + ' - ' + (habit.is_completed ? 'Completed' : 'Not Completed'),
+                            start: habit.completion_date, // Use the habit completion date
                             allDay: true,
-                            color: habit[1] ? 'green' : 'red' // Green for completed, red for not
+                            color: habit.is_completed ? 'green' : 'red' // Green for completed, red for not
                         };
                     });
                     callback(events);
