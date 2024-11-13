@@ -190,19 +190,27 @@ def update_habit_completion(habit_id):
     return jsonify({'message': 'Habit completion status updated successfully!'})
 
 # Fetch habits completed on a specific date
+from datetime import datetime
+
 @app.route('/habits_on_date/<date>', methods=['GET'])
 @login_required
 def habits_on_date(date):
+    # Convert the date string from the URL to a datetime.date object
+    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+
+    # Query for habits on the given date for the current user
     habits = Habit.query.join(HabitCompletion, Habit.id == HabitCompletion.habit_id).filter(
         Habit.user_id == current_user.id,
-        HabitCompletion.completion_date == date
+        HabitCompletion.completion_date == date_obj
     ).all()
-    
+
+    # Return the habit details as a JSON response
     return jsonify([{
-        'habit_name': habit.habit_name, 
+        'habit_name': habit.habit_name,
         'is_completed': habit_completion.is_completed,
         'completion_date': habit_completion.completion_date
-    } for habit in habits for habit_completion in habit.habit_completions if habit_completion.completion_date == date])
+    } for habit in habits for habit_completion in habit.habit_completions if habit_completion.completion_date == date_obj])
+
 
 # Update habit completion for a specific date
 @app.route('/update_habit_status', methods=['POST'])
