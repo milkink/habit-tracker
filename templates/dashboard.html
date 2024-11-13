@@ -31,9 +31,9 @@
                 <label>
                     <input type="checkbox" 
                            class="habit-checkbox" 
-                           data-habit-id="{{ habit[0] }}" 
-                           {% if habit[3] == 1 %} checked {% endif %}>
-                    {{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}
+                           data-habit-id="{{ habit.id }}" 
+                           {% if habit.is_completed %} checked {% endif %}>
+                    {{ habit.habit_name }} ({{ habit.habit_frequency }}) - Streak: {{ habit.streak }}
                 </label>
             </li>
         {% else %}
@@ -72,6 +72,11 @@
             e.preventDefault();
             const habitName = $('#habit-name').val();
             const habitFrequency = $('#habit-frequency').val();
+
+            if (!habitName || !habitFrequency) {
+                alert('Both habit name and frequency are required.');
+                return;
+            }
 
             $.ajax({
                 url: '/add_habit',
