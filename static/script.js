@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Initialize FullCalendar (unchanged)
+    // Initialize FullCalendar
     $('#calendar').fullCalendar({
         events: function(start, end, timezone, callback) {
             $.ajax({
@@ -135,6 +135,10 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         dayClick: function(date, jsEvent, view) {
             const selectedDate = date.format(); // Format date as 'YYYY-MM-DD'
+
+            // Add logging to debug
+            console.log("Clicked date: ", selectedDate);
+
             // Fetch habits for the selected date
             fetch(`/habits_on_date/${selectedDate}`)
                 .then(response => response.json())
@@ -144,10 +148,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     let notCompletedHabits = '';
 
                     habits.forEach(habit => {
+                        const habitStatus = habit.is_completed ? 'Completed' : 'Not Completed';
+                        const habitItem = `<li>${habit.habit_name} - ${habitStatus}</li>`;
+                        
                         if (habit.is_completed) {
-                            completedHabits += `<li>${habit.habit_name}</li>`;
+                            completedHabits += habitItem;
                         } else {
-                            notCompletedHabits += `<li>${habit.habit_name}</li>`;
+                            notCompletedHabits += habitItem;
                         }
                     });
 
