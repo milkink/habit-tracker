@@ -107,8 +107,8 @@
                     url: '/remove_habit/' + habitId,
                     type: 'DELETE',
                     success: function(response) {
-                        alert(response.message);
-                        location.reload();  // Reload the page to reflect the changes
+                        alert(response.message);  // Show success message
+                        $(this).closest('li').remove();  // Remove the habit from the list (without reloading the page)
                     },
                     error: function(error) {
                         alert('Error removing habit.');
