@@ -346,6 +346,12 @@ def update_habit_status():
 def calendar():
     return render_template('calendar.html')
 
+@app.route("/check-data")
+def check_data():
+    result = db.session.execute("SELECT * FROM users LIMIT 5").fetchall()
+    return jsonify([dict(row) for row in result])
+
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
