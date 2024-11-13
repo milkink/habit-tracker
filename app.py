@@ -148,15 +148,20 @@ def get_habits():
 # Remove a habit
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 def remove_habit(habit_id):
-    # Find the habit by ID
+    # Find the habit by its ID
     habit = Habit.query.get(habit_id)
+
     if habit:
-        # Delete the habit
-        db.session.delete(habit)
-        db.session.commit()
-        return jsonify({'message': 'Habit removed successfully!'}), 200
+        try:
+            db.session.delete(habit)  # Delete the habit
+            db.session.commit()
+            return jsonify({"message": "Habit removed successfully!"}), 200
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of error
+            return jsonify({"message": "Error removing habit."}), 500
     else:
-        return jsonify({'message': 'Habit not found!'}), 404
+        return jsonify({"message": "Habit not found."}), 404
+
 
 # Update habit completion and calculate streak
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
