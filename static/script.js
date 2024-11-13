@@ -30,9 +30,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     li.appendChild(removeButton);
                     habitList.appendChild(li);
                 });
-            })
-            .catch(error => {
-                console.error('Error fetching habits:', error);
             });
     }
 
@@ -64,10 +61,6 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchHabits();  // Refresh the list of habits
             habitNameInput.value = '';  // Clear input fields
             habitFrequencyInput.value = '';
-        })
-        .catch(error => {
-            alert('Error adding habit.');
-            console.error('Error adding habit:', error);
         });
     });
 
@@ -84,10 +77,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             alert(data.message);
             fetchHabits();  // Refresh the list of habits
-        })
-        .catch(error => {
-            alert('Error updating habit completion.');
-            console.error('Error updating habit completion:', error);
         });
     }
 
@@ -100,10 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             alert(data.message);
             fetchHabits();  // Refresh the list of habits
-        })
-        .catch(error => {
-            alert('Error removing habit.');
-            console.error('Error removing habit:', error);
         });
     }
 
@@ -135,10 +120,6 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         dayClick: function(date, jsEvent, view) {
             const selectedDate = date.format(); // Format date as 'YYYY-MM-DD'
-
-            // Add logging to debug
-            console.log("Clicked date: ", selectedDate);
-
             // Fetch habits for the selected date
             fetch(`/habits_on_date/${selectedDate}`)
                 .then(response => response.json())
@@ -148,13 +129,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     let notCompletedHabits = '';
 
                     habits.forEach(habit => {
-                        const habitStatus = habit.is_completed ? 'Completed' : 'Not Completed';
-                        const habitItem = `<li>${habit.habit_name} - ${habitStatus}</li>`;
-                        
                         if (habit.is_completed) {
-                            completedHabits += habitItem;
+                            completedHabits += `<li>${habit.habit_name} - Completed</li>`;
                         } else {
-                            notCompletedHabits += habitItem;
+                            notCompletedHabits += `<li>${habit.habit_name} - Not Completed</li>`;
                         }
                     });
 
