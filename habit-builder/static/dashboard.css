@@ -154,3 +154,27 @@ ul li {
     text-align: left; /* Align the title to the left */
     margin-bottom: 15px;
 }
+
+/* Add these styles to your existing dashboard.css */
+
+.analytics-link-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.analytics-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #1fc76b;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.analytics-link:hover {
+    background-color: #17a05a;
+}
+
+
+
+
