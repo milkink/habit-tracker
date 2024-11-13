@@ -25,21 +25,23 @@
 
     <!-- Habit List -->
     <h2>Your Habits</h2>
-    <ul id="habit-list">
-        {% for habit in habits %}
-            <li>
-                <label>
-                    <input type="checkbox" 
+        <ul id="habit-list">
+            {% for habit in habits %}
+                <li>
+                    <label>
+                        <input type="checkbox" 
                            class="habit-checkbox" 
-                           data-habit-id="{{ habit.id }}" 
-                           {% if habit.is_completed %} checked {% endif %}>
-                    {{ habit.habit_name }} ({{ habit.habit_frequency }}) - Streak: {{ habit.streak }}
-                </label>
-            </li>
-        {% else %}
-            <p>No habits found. Start adding some!</p>
-        {% endfor %}
-    </ul>
+                           data-habit-id="{{ habit[0] }}" 
+                           {% if habit[3] == 1 %} checked {% endif %}>
+                        {{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}
+                    </label>
+                    <!-- Remove button for each habit -->
+                    <button class="remove-btn" data-habit-id="{{ habit[0] }}">Remove</button>
+                </li>
+            {% else %}
+                <p>No habits found. Start adding some!</p>
+            {% endfor %}
+        </ul>
 
     <!-- Link to Habit Calendar -->
     <h2><a href="{{ url_for('calendar') }}">View Habit Calendar</a></h2>
