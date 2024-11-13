@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker - Calendar</title>
+
+    <!-- Link to FullCalendar CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.2.0/fullcalendar.min.css">
+
+    <!-- Link to your custom styles.css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='/styles.css') }}">
+
+    <!-- jQuery and Moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.2.0/fullcalendar.min.js"></script>
+
+    <style>
+        /* Ensure full calendar takes up the correct space */
+        #calendar {
+            width: 100%;
+            max-width: 1200px;  /* Limit the width of the calendar */
+            margin: 0 auto;
+            height: 700px;  /* Adjust height as needed */
+        }
+
+        /* Custom CSS for full calendar */
+        .fc-toolbar {
+            background-color: #f5f5f5;
+            padding: 10px;
+        }
+
+        .fc-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .fc-button:hover {
+            background-color: #45a049;
+        }
+
+        .fc-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Change colors for events */
+        .fc-event {
+            border: none;
+        }
+
+        .fc-event.fc-event-success {
+            background-color: green;
+            color: white;
+        }
+
+        .fc-event.fc-event-danger {
+            background-color: red;
+            color: white;
+        }
+
+        /* Customizing the calendar header */
+        .fc-header-toolbar {
+            background-color: #e3e3e3;
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* Make sure the calendar grid and date cells are correctly sized */
+        .fc-day-grid .fc-day {
+            min-height: 60px;
+        }
+
+        /* Style for the habit details modal */
+        #habit-modal {
+            display: none;
+            position: fixed;
+            top: 20%;
+            left: 30%;
+            width: 40%;
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+        }
+
+        #habit-list li {
+            margin-bottom: 10px;
+        }
+
+        #habit-modal h2 {
+            margin-top: 0;
+        }
+    </style>
+
+</head>
+<body>
+
+    <h1>Habit Tracker Calendar</h1>
+
+    <!-- FullCalendar div -->
+    <div id="calendar"></div>
+
+    <!-- Modal to show completed habits for a date -->
+    <div id="habit-modal">
+        <h2>Habits for <span id="modal-date"></span></h2>
+        <ul id="habit-list"></ul>
+        <button onclick="closeModal()">Close</button>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Initialize FullCalendar
+            $('#calendar').fullCalendar({
+                events: function(start, end, timezone, callback) {
+                    $.ajax({
+                        url: '/habits_on_date/' + moment().format('YYYY-MM-DD'),
+                        dataType: 'json',
+                        success: function(data) {
+                            var events = data.map(function(habit) {
+                                return {
+                                    title: habit[0] + ' - ' + (habit[1] ? 'Completed' : 'Not Completed'),
+                                    start: habit[2], // Habit completion date
+                                    allDay: true,
+                                    color: habit[1] ? 'green' : 'red' // Green for completed, red for not completed
+                                };
+                            });
+                            callback(events);
+                        }
+                    });
+                },
+                editable: true,
+                droppable: false,  // Disallow drag-and-drop
+                header: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'month,agendaWeek,agendaDay'
+                },
+                defaultView: 'month',  // Set the default view to "month"
+                dayClick: function(date, jsEvent, view) {
+                    const selectedDate = date.format(); // Format date as 'YYYY-MM-DD'
+                    // Show the habit details modal for the clicked date
+                    fetchHabitsForDate(selectedDate);
+                }
+            });
+        });
+
+        function fetchHabitsForDate(date) {
+            // Fetch the habits for the selected date
+            $.ajax({
+                url: '/habits_on_date/' + date,
+                dataType: 'json',
+                success: function(data) {
+                    const habitList = document.getElementById('habit-list');
+                    habitList.innerHTML = '';  // Clear previous list
+                    if (data.length > 0) {
+                        data.forEach(habit => {
+                            const li = document.createElement('li');
+                            li.textContent = `${habit.habit_name}: ${habit.is_completed ? 'Completed' : 'Not Completed'}`;
+                            habitList.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No habits for this date.';
+                        habitList.appendChild(li);
+                    }
+                    document.getElementById('modal-date').textContent = date;
+                    document.getElementById('habit-modal').style.display = 'block';
+                }
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('habit-modal').style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
