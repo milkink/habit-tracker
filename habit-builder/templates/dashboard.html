@@ -13,7 +13,7 @@
         <h2>Welcome, {{ current_user.username }}!</h2>
         <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
     </div>
-    
+
     <!-- Habit Form -->
     <div class="habit-form-container">
         <form id="habit-form">
@@ -23,26 +23,73 @@
         </form>
     </div>
 
-    <!-- Your Habits -->
-    
+    <!-- Habit List -->
     <h2>Your Habits</h2>
-<ul id="habit-list">
-    {% for habit in habits %}
-        <li>
-            <label>
-                <input type="checkbox" 
-                       class="habit-checkbox" 
-                       data-habit-id="{{ habit[0] }}" 
-                       {% if habit[3] == 1 %} checked {% endif %}>
-                {{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}
-            </label>
-        </li>
-    {% else %}
-        <p>No habits found. Start adding some!</p>
-    {% endfor %}
-</ul>
+    <ul id="habit-list">
+        {% for habit in habits %}
+            <li>
+                <label>
+                    <input type="checkbox" 
+                           class="habit-checkbox" 
+                           data-habit-id="{{ habit[0] }}" 
+                           {% if habit[3] == 1 %} checked {% endif %}>
+                    {{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}
+                </label>
+            </li>
+        {% else %}
+            <p>No habits found. Start adding some!</p>
+        {% endfor %}
+    </ul>
 
+    <!-- Link to Habit Calendar -->
+    <h2><a href="{{ url_for('calendar') }}">View Habit Calendar</a></h2>
 
+    <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        // Handle habit checkbox change
+        $(document).on('change', '.habit-checkbox', function() {
+            const habitId = $(this).data('habit-id');
+            const isCompleted = $(this).prop('checked') ? 1 : 0;
+
+            $.ajax({
+                url: '/update_habit_completion/' + habitId,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ is_completed: isCompleted }),
+                success: function(response) {
+                    alert(response.message);
+                },
+                error: function(error) {
+                    alert('Error updating habit completion.');
+                }
+            });
+        });
+
+        // Handle form submission for adding a new habit
+        $('#habit-form').submit(function(e) {
+            e.preventDefault();
+            const habitName = $('#habit-name').val();
+            const habitFrequency = $('#habit-frequency').val();
+
+            $.ajax({
+                url: '/add_habit',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    habit_name: habitName,
+                    habit_frequency: habitFrequency
+                }),
+                success: function(response) {
+                    alert(response.message);
+                    location.reload();  // Reload the page to show the new habit
+                },
+                error: function(error) {
+                    alert('Error adding habit.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
