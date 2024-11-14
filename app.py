@@ -172,9 +172,10 @@ def get_habits():
 
 # Remove a habit
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
+@login_required
 def remove_habit(habit_id):
     # Find the habit by its ID
-    habit = Habit.query.get(habit_id)
+    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()  # Ensure it's the current user's habit
 
     if habit:
         try:
