@@ -1,9 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
-import psycopg2
+import sqlite3
 from datetime import datetime, timedelta
-import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # For session management
@@ -11,26 +10,9 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to login page if not logged in
 bcrypt = Bcrypt(app)
 
-# Function to connect to the PostgreSQL database
-
-from urllib.parse import urlparse
-
+# Function to connect to the database
 def connect_db():
-    # Get the DATABASE_URL environment variable
-    database_url = os.getenv('DATABASE_URL')
-
-    # Parse the DATABASE_URL into its components (username, password, host, port, and database name)
-    parsed_url = urlparse(database_url)
-
-    # Use the parsed components to establish a connection to the database
-    return psycopg2.connect(
-        dbname=parsed_url.path[1:],   # The database name is the part after the first '/'
-        user=parsed_url.username,     # Username from the URL
-        password=parsed_url.password, # Password from the URL
-        host=parsed_url.hostname,     # Host from the URL
-        port=parsed_url.port          # Port from the URL
-    )
-
+    return sqlite3.connect('habit_tracker.db')
 
 # User model
 class User(UserMixin):
@@ -43,7 +25,7 @@ class User(UserMixin):
 def load_user(user_id):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
     if user:
@@ -67,7 +49,7 @@ def signup():
 
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password))
+        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
         conn.commit()
         conn.close()
 
@@ -84,7 +66,7 @@ def login():
 
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
         conn.close()
 
@@ -102,7 +84,7 @@ def login():
 def dashboard():
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = %s", (current_user.id,))
+    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = ?", (current_user.id,))
     habits = cursor.fetchall()
     conn.close()
 
@@ -116,14 +98,15 @@ def logout():
     return redirect(url_for('home'))  # Redirect to home after logout
 
 # Initialize the database
+# Initialize the database
 def init_db():
     conn = connect_db()
     cursor = conn.cursor()
-
+    
     # Create the users table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         password TEXT NOT NULL
     )
@@ -132,7 +115,7 @@ def init_db():
     # Create the habits table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS habits (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         habit_name TEXT NOT NULL,
         habit_frequency TEXT NOT NULL,
@@ -146,7 +129,7 @@ def init_db():
     # Create the habit_completions table with a unique constraint on (habit_id, user_id, completion_date)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS habit_completions (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         habit_id INTEGER NOT NULL,
         completion_date DATE NOT NULL,
@@ -160,17 +143,18 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 # Adding a new habit
 @app.route('/add_habit', methods=['POST'])
 @login_required
 def add_habit():
     habit_name = request.json['habit_name']
     habit_frequency = request.json['habit_frequency']
-
+    
     # Insert the habit into the database
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO habits (user_id, habit_name, habit_frequency) VALUES (%s, %s, %s)",
+    cursor.execute("INSERT INTO habits (user_id, habit_name, habit_frequency) VALUES (?, ?, ?)",
                    (current_user.id, habit_name, habit_frequency))
     conn.commit()
     conn.close()
@@ -183,42 +167,23 @@ def add_habit():
 def get_habits():
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = %s", (current_user.id,))
+    cursor.execute("SELECT id, habit_name, habit_frequency, is_completed, streak FROM habits WHERE user_id = ?", (current_user.id,))
     habits = cursor.fetchall()
     conn.close()
 
     return {'habits': habits}
 
-# Remove a habit (Modified for PostgreSQL)
+# Remove a habit
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 @login_required
 def remove_habit(habit_id):
-    try:
-        # Connect to PostgreSQL database
-        conn = connect_db()
-        cursor = conn.cursor()
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
+    conn.commit()
+    conn.close()
 
-        # Delete habit for the current user and check if the habit exists
-        cursor.execute("DELETE FROM habits WHERE id = %s AND user_id = %s RETURNING id", (habit_id, current_user.id))
-        deleted_habit = cursor.fetchone()  # Check if the habit was deleted
-
-        # Commit the transaction
-        conn.commit()
-
-        if deleted_habit:
-            # Habit was deleted
-            return jsonify({"message": "Habit removed successfully!"}), 200
-        else:
-            # Habit not found or user doesn't own the habit
-            return jsonify({"message": "Habit not found or you don't have permission to delete it."}), 404
-
-    except Exception as e:
-        # If an error occurs, return a generic error message
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-    finally:
-        # Ensure that the connection is always closed, even if an error occurs
-        cursor.close()
-        conn.close()
+    return {'message': 'Habit removed successfully!'}
 
 # Add a new route for updating habit completion and calculating streak
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
@@ -233,7 +198,7 @@ def update_habit_completion(habit_id):
     # Check if the habit completion for today already exists
     cursor.execute("""
         SELECT * FROM habit_completions
-        WHERE habit_id = %s AND user_id = %s AND completion_date = %s
+        WHERE habit_id = ? AND user_id = ? AND completion_date = ?
     """, (habit_id, current_user.id, current_date))
     existing_completion = cursor.fetchone()
 
@@ -241,18 +206,18 @@ def update_habit_completion(habit_id):
         # If record exists, update the completion status
         cursor.execute("""
             UPDATE habit_completions
-            SET is_completed = %s
-            WHERE habit_id = %s AND user_id = %s AND completion_date = %s
+            SET is_completed = ?
+            WHERE habit_id = ? AND user_id = ? AND completion_date = ?
         """, (is_completed, habit_id, current_user.id, current_date))
     else:
         # If record doesn't exist, insert a new completion record
         cursor.execute("""
             INSERT INTO habit_completions (habit_id, user_id, completion_date, is_completed)
-            VALUES (%s, %s, %s, %s)
+            VALUES (?, ?, ?, ?)
         """, (habit_id, current_user.id, current_date, is_completed))
 
     # Now, handle streak logic
-    cursor.execute("SELECT * FROM habits WHERE id = %s AND user_id = %s", (habit_id, current_user.id))
+    cursor.execute("SELECT * FROM habits WHERE id = ? AND user_id = ?", (habit_id, current_user.id))
     habit = cursor.fetchone()
 
     if habit:
@@ -262,25 +227,27 @@ def update_habit_completion(habit_id):
             # Check if the habit was completed yesterday, or if this is a fresh streak
             if last_completed is None:
                 # If habit has never been completed, start streak at 1
-                cursor.execute("UPDATE habits SET streak = 1, last_completed = %s WHERE id = %s AND user_id = %s",
+                cursor.execute("UPDATE habits SET streak = 1, last_completed = ? WHERE id = ? AND user_id = ?",
                                (current_date, habit_id, current_user.id))
             elif (current_date - datetime.strptime(last_completed, '%Y-%m-%d').date()).days == 1:
                 # If completed yesterday, increment streak
-                cursor.execute("UPDATE habits SET streak = streak + 1, last_completed = %s WHERE id = %s AND user_id = %s",
+                cursor.execute("UPDATE habits SET streak = streak + 1, last_completed = ? WHERE id = ? AND user_id = ?",
                                (current_date, habit_id, current_user.id))
             else:
                 # If not completed yesterday, reset streak to 1
-                cursor.execute("UPDATE habits SET streak = 1, last_completed = %s WHERE id = %s AND user_id = %s",
+                cursor.execute("UPDATE habits SET streak = 1, last_completed = ? WHERE id = ? AND user_id = ?",
                                (current_date, habit_id, current_user.id))
         else:
             # If not completed today, do not change streak
-            cursor.execute("UPDATE habits SET last_completed = %s WHERE id = %s AND user_id = %s",
+            cursor.execute("UPDATE habits SET last_completed = ? WHERE id = ? AND user_id = ?",
                            (current_date, habit_id, current_user.id))
 
     conn.commit()
     conn.close()
 
     return jsonify({'message': 'Habit completion status updated successfully!'})
+
+
 
 # Fetch habits completed on a specific date
 @app.route('/habits_on_date/<date>', methods=['GET'])
@@ -297,8 +264,8 @@ def habits_on_date(date):
         FROM habits
         LEFT JOIN habit_completions 
         ON habits.id = habit_completions.habit_id 
-           AND habit_completions.completion_date = %s
-        WHERE habits.user_id = %s
+           AND habit_completions.completion_date = ?
+        WHERE habits.user_id = ?
     """, (date, current_user.id))
 
     habits = cursor.fetchall()
@@ -312,6 +279,8 @@ def habits_on_date(date):
     } for habit in habits]
 
     return jsonify(habit_data)
+
+
 
 @app.route('/habits_on_date_range', methods=['POST'])
 @login_required
@@ -327,13 +296,15 @@ def habits_on_date_range():
         SELECT habits.habit_name, habit_completions.completion_date, habit_completions.is_completed
         FROM habit_completions
         JOIN habits ON habits.id = habit_completions.habit_id
-        WHERE habit_completions.user_id = %s AND habit_completions.completion_date BETWEEN %s AND %s
+        WHERE habit_completions.user_id = ? AND habit_completions.completion_date BETWEEN ? AND ?
     """, (current_user.id, start_date, end_date))
 
     habits = [{'name': row[0], 'date': row[1], 'is_completed': row[2]} for row in cursor.fetchall()]
     conn.close()
 
     return jsonify(habits)
+
+
 
 # Update habit completion for a specific date
 @app.route('/update_habit_status', methods=['POST'])
@@ -350,7 +321,7 @@ def update_habit_status():
     # Insert or update the habit completion status for the selected date
     cursor.execute("""
         INSERT OR REPLACE INTO habit_completions (user_id, habit_id, completion_date, is_completed)
-        VALUES (%s, %s, %s, %s)
+        VALUES (?, ?, ?, ?)
     """, (current_user.id, habit_id, completion_date, is_completed))
     
     conn.commit()
