@@ -119,41 +119,69 @@ def dashboard():
         flash("An error occurred while loading the dashboard.")
         return redirect(url_for('home'))
 
-# Analytics route
+# Analytics routefrom datetime import datetime, timedelta
+
 @app.route('/analytics')
 @login_required
 def analytics():
     try:
-        habit_completions = HabitCompletion.query.filter_by(user_id=current_user.id).all()
+        # Get the date for 30 days ago
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = thirty_days_ago.date()
 
+        # Query habit completions for the logged-in user from the last 30 days
+        habit_completions = HabitCompletion.query.filter(
+            HabitCompletion.user_id == current_user.id,
+            HabitCompletion.completion_date >= thirty_days_ago
+        ).all()
+
+        # Initialize data structures to hold habit completion counts
         habits_data = {}
+
         for completion in habit_completions:
-            habit_name = completion.habit.habit_name  # Ensure habit_name exists and is not None
+            habit_name = completion.habit.habit_name
             date = completion.completion_date
             is_completed = completion.is_completed
 
             if habit_name not in habits_data:
-                habits_data[habit_name] = {'dates': [], 'completed': [], 'not_completed': []}
+                habits_data[habit_name] = {
+                    'dates': [],  # List to store the dates of completion
+                    'completed': 0,  # Counter for completed days
+                    'not_completed': 0  # Counter for not completed days
+                }
+
+            # Count completions and non-completions
+            if is_completed:
+                habits_data[habit_name]['completed'] += 1
+            else:
+                habits_data[habit_name]['not_completed'] += 1
 
             habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
-            if is_completed:
-                habits_data[habit_name]['completed'].append(date.strftime('%Y-%m-%d'))
-            else:
-                habits_data[habit_name]['not_completed'].append(date.strftime('%Y-%m-%d'))
 
-        # Clean habits_data to ensure no non-serializable types
-        cleaned_habits_data = ensure_serializable(habits_data)
+        # Prepare the data for Chart.js
+        chart_data = {
+            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
+            'datasets': []
+        }
 
-        # Log cleaned data for debugging
-        app.logger.debug(f"Cleaned Habits Data (After Serialization): {cleaned_habits_data}")
+        for habit_name, data in habits_data.items():
+            dataset = {
+                'label': habit_name,
+                'data': [data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
+                'borderColor': 'rgba(75, 192, 192, 1)',
+                'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                'fill': False,
+            }
+            chart_data['datasets'].append(dataset)
 
-        # Pass cleaned data to the template
-        return render_template('analytics.html', habits_data=cleaned_habits_data)
+        # Return the template with the graph data
+        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
         flash("An error occurred while loading the analytics.")
         return redirect(url_for('home'))
+
 
 
 # Logout route
