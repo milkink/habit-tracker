@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/get_habits')
             .then(response => response.json())
             .then(data => {
-                habitList.innerHTML = '';
+                habitList.innerHTML = ''; // Clear current habit list
                 data.habits.forEach(habit => {
                     const li = document.createElement('li');
                     li.textContent = `${habit[1]} - ${habit[2]} - Streak: ${habit[4]}`;
@@ -17,12 +17,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Create remove button
                     const removeButton = document.createElement('button');
                     removeButton.textContent = 'Remove';
-                    removeButton.onclick = () => removeHabit(habit[0]);
+                    removeButton.classList.add('remove-btn');
+                    removeButton.setAttribute('data-habit-id', habit[0]);
 
-                    // Create checkbox
+                    // Create checkbox for habit completion
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
-                    checkbox.checked = habit[3] === 1;
+                    checkbox.checked = habit[3] === 1; // Check if habit is completed
                     checkbox.addEventListener('change', () => updateHabitCompletion(habit[0], checkbox.checked));
 
                     // Append elements to list item
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch habits on page load
     fetchHabits();
 
-    // Handle form submission
+    // Handle form submission to add new habit
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         const habitName = habitNameInput.value.trim();
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Function to update habit completion
+    // Function to update habit completion (checkbox change)
     function updateHabitCompletion(habitId, isCompleted) {
         fetch(`/update_habit_completion/${habitId}`, {
             method: 'PUT',
@@ -88,9 +89,23 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
             alert(data.message);
-            fetchHabits();  // Refresh the list of habits
+            fetchHabits();  // Refresh the habit list
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error removing habit.');
         });
     }
+
+    // Delegate event listener for remove buttons
+    habitList.addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-btn')) {
+            const habitId = event.target.getAttribute('data-habit-id');
+            if (habitId) {
+                removeHabit(habitId);
+            }
+        }
+    });
 
     // Initialize FullCalendar
     $('#calendar').fullCalendar({
