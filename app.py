@@ -102,8 +102,14 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    habits = Habit.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', habits=habits)  # Pass habits to template
+    try:
+        habits = Habit.query.filter_by(user_id=current_user.id).all()
+        return render_template('dashboard.html', habits=habits)  # Pass habits to template
+
+    except Exception as e:
+        app.logger.error(f"Error loading dashboard: {e}")
+        flash("An error occurred while loading the dashboard.")
+        return redirect(url_for('home'))
 
 # Analytics route
 @app.route('/analytics')
@@ -174,7 +180,6 @@ def get_habits():
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 @login_required
 def remove_habit(habit_id):
-    # Find the habit by its ID
     habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()  # Ensure it's the current user's habit
 
     if habit:
@@ -188,7 +193,6 @@ def remove_habit(habit_id):
     else:
         return jsonify({"message": "Habit not found."}), 404
 
-
 # Update habit completion and calculate streak
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
 @login_required
@@ -196,20 +200,16 @@ def update_habit_completion(habit_id):
     is_completed = request.json['is_completed']
     current_date = datetime.now().date()
 
-    # Check if the habit completion for today already exists
     completion = HabitCompletion.query.filter_by(
         habit_id=habit_id, user_id=current_user.id, completion_date=current_date).first()
 
     if completion:
-        # Update the completion status
         completion.is_completed = is_completed
     else:
-        # Insert a new completion record
         completion = HabitCompletion(
             habit_id=habit_id, user_id=current_user.id, completion_date=current_date, is_completed=is_completed)
         db.session.add(completion)
 
-    # Update streak logic
     habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
     if habit:
         if is_completed:
@@ -230,16 +230,13 @@ def update_habit_completion(habit_id):
 @app.route('/habits_on_date/<date>', methods=['GET'])
 @login_required
 def habits_on_date(date):
-    # Convert the date string from the URL to a datetime.date object
     date_obj = datetime.strptime(date, '%Y-%m-%d').date()
 
-    # Query for habits and their completion status on the given date for the current user
     habit_completions = HabitCompletion.query.join(Habit).filter(
         Habit.user_id == current_user.id,
         HabitCompletion.completion_date == date_obj
     ).all()
 
-    # Format the results for response
     result = [{
         'habit_name': habit_completion.habit.habit_name,
         'is_completed': habit_completion.is_completed,
@@ -254,24 +251,26 @@ def habits_on_date(date):
 @login_required
 def update_habit_status():
     data = request.get_json()
-    habit_id = data.get('habit_id')
-    completion_date = datetime.strptime(data.get('completion_date'), '%Y-%m-%d').date()
-    is_completed = data.get('is_completed')
+    habit_id = data.get("habit_id")
+    date_str = data.get("completion_date")
+    is_completed = data.get("is_completed")
 
-    # Find or create HabitCompletion record
-    habit_completion = HabitCompletion.query.filter_by(
-        habit_id=habit_id, user_id=current_user.id, completion_date=completion_date).first()
+    completion_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    completion = HabitCompletion.query.filter_by(habit_id=habit_id, user_id=current_user.id, completion_date=completion_date).first()
 
-    if not habit_completion:
-        habit_completion = HabitCompletion(
-            habit_id=habit_id, user_id=current_user.id, completion_date=completion_date, is_completed=is_completed)
-        db.session.add(habit_completion)
+    if completion:
+        completion.is_completed = is_completed
     else:
-        habit_completion.is_completed = is_completed
+        completion = HabitCompletion(
+            habit_id=habit_id,
+            user_id=current_user.id,
+            completion_date=completion_date,
+            is_completed=is_completed
+        )
+        db.session.add(completion)
 
     db.session.commit()
-    return jsonify({'message': 'Habit status updated!'}), 200
-
+    return jsonify({'message': 'Habit status updated successfully!'})
 
 if __name__ == '__main__':
     app.run(debug=True)
