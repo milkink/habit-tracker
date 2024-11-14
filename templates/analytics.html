@@ -14,7 +14,7 @@
 
 <script>
     // Prepare data for the graph (this will be passed from Flask)
-    const completionData = {{ completion_data | tojson }};
+    const completionData = {{ completion_data | tojson | safe }};
     
     const labels = Object.keys(completionData);  // Dates
     const data = Object.values(completionData);  // Completion status (True/False)
