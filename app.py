@@ -164,13 +164,21 @@ def get_habits():
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 @login_required
 def remove_habit(habit_id):
+    # Get the habit for the current user
     habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
+    
     if habit:
+        # Delete the habit completions for the current user
+        HabitCompletion.query.filter_by(habit_id=habit_id, user_id=current_user.id).delete()
+
+        # Now, delete the habit itself
         db.session.delete(habit)
         db.session.commit()
+
         return jsonify({"message": "Habit removed successfully!"}), 200
     else:
         return jsonify({"message": "Habit not found."}), 404
+
 
 # Update habit completion
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
