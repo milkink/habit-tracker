@@ -11,6 +11,7 @@ login_manager.login_view = 'login'  # Redirect to login page if not logged in
 bcrypt = Bcrypt(app)
 
 import os
+import psycopg2
 # Function to connect to the database
 def connect_db():
     return psycopg2.connect(os.getenv('DATABASE_URL'))
