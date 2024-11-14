@@ -105,6 +105,31 @@ def dashboard():
     habits = Habit.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', habits=habits)  # Pass habits to template
 
+# Analytics route
+@app.route('/analytics')
+@login_required
+def analytics():
+    # Fetch the habit completion data for the user
+    habit_completions = HabitCompletion.query.filter_by(user_id=current_user.id).all()
+    
+    # Prepare data to send to the template for graphing
+    habits_data = {}
+    for completion in habit_completions:
+        habit_name = completion.habit.habit_name
+        date = completion.completion_date
+        is_completed = completion.is_completed
+
+        if habit_name not in habits_data:
+            habits_data[habit_name] = {'dates': [], 'completed': [], 'not_completed': []}
+
+        habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
+        if is_completed:
+            habits_data[habit_name]['completed'].append(date.strftime('%Y-%m-%d'))
+        else:
+            habits_data[habit_name]['not_completed'].append(date.strftime('%Y-%m-%d'))
+    
+    return render_template('analytics.html', habits_data=habits_data)
+
 # Logout route
 @app.route('/logout')
 @login_required
@@ -227,35 +252,25 @@ def habits_on_date(date):
 @app.route('/update_habit_status', methods=['POST'])
 @login_required
 def update_habit_status():
-    habit_id = request.json['habit_id']
-    completion_date = datetime.strptime(request.json['completion_date'], '%Y-%m-%d').date()
-    is_completed = request.json['is_completed']
+    data = request.get_json()
+    habit_id = data.get('habit_id')
+    completion_date = datetime.strptime(data.get('completion_date'), '%Y-%m-%d').date()
+    is_completed = data.get('is_completed')
 
-    # Insert or update the habit completion status for the selected date
-    completion = HabitCompletion.query.filter_by(
-        user_id=current_user.id, habit_id=habit_id, completion_date=completion_date).first()
-    
-    if completion:
-        completion.is_completed = is_completed
+    # Find or create HabitCompletion record
+    habit_completion = HabitCompletion.query.filter_by(
+        habit_id=habit_id, user_id=current_user.id, completion_date=completion_date).first()
+
+    if not habit_completion:
+        habit_completion = HabitCompletion(
+            habit_id=habit_id, user_id=current_user.id, completion_date=completion_date, is_completed=is_completed)
+        db.session.add(habit_completion)
     else:
-        new_completion = HabitCompletion(
-            user_id=current_user.id, habit_id=habit_id, completion_date=completion_date, is_completed=is_completed)
-        db.session.add(new_completion)
+        habit_completion.is_completed = is_completed
 
     db.session.commit()
-    return jsonify({'message': 'Habit status updated successfully!'})
+    return jsonify({'message': 'Habit status updated!'}), 200
 
-# Calendar route to display the habit completion calendar
-@app.route('/calendar')
-@login_required
-def calendar():
-    return render_template('calendar.html')
-
-# Sample route to check data in database
-@app.route("/check-data")
-def check_data():
-    result = db.session.execute("SELECT * FROM users LIMIT 5").fetchall()
-    return jsonify([dict(row) for row in result])
 
 if __name__ == '__main__':
     app.run(debug=True)
