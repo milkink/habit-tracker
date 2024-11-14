@@ -92,18 +92,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Attach event listener to remove button
-document.addEventListener('DOMContentLoaded', function () {
-    const habitList = document.getElementById('habit-list');
-
-    habitList.addEventListener('click', function(event) {
-        if (event.target && event.target.matches('button.remove-btn')) {
-            const habitId = event.target.getAttribute('data-habit-id');
-            removeHabit(habitId);  // Call the removeHabit function
-        }
-    });
-});
-
     // Initialize FullCalendar
     $('#calendar').fullCalendar({
         events: function(start, end, timezone, callback) {
@@ -169,10 +157,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Close button event listener
                     closeButton.onclick = () => {
-                        console.log('Closing the popup...');
-                        popup.style.display = 'none';  // Hide the popup
+                        popup.remove();  // Remove the popup completely from the DOM
                     };
-
 
                     popup.appendChild(closeButton);
 
