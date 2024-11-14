@@ -46,26 +46,23 @@ class HabitCompletion(db.Model):
     habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
     completion_date = db.Column(db.Date, nullable=False)
     is_completed = db.Column(db.Boolean, nullable=False)
-
-    # Define the relationship with Habit
     habit = db.relationship('Habit', backref='habit_completions')
-
 
 # Initialize the database if needed
 with app.app_context():
-    db.create_all()  # Creates tables based on defined models
+    db.create_all()
 
 # Load user for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Home route - renders the homepage
+# Home route
 @app.route('/')
 def home():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))  # Redirect to the dashboard if logged in
-    return render_template('index.html')  # Show Sign Up/Login options if not logged in
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
 
 # Signup route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -93,19 +90,18 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('dashboard'))  # Redirect to dashboard after successful login
+            return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password')
     return render_template('login.html')
 
-# Dashboard route (only accessible if logged in)
+# Dashboard route
 @app.route('/dashboard')
 @login_required
 def dashboard():
     try:
         habits = Habit.query.filter_by(user_id=current_user.id).all()
-        return render_template('dashboard.html', habits=habits)  # Pass habits to template
-
+        return render_template('dashboard.html', habits=habits)
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
         flash("An error occurred while loading the dashboard.")
@@ -115,10 +111,7 @@ def dashboard():
 @app.route('/analytics')
 @login_required
 def analytics():
-    # Fetch the habit completion data for the user
     habit_completions = HabitCompletion.query.filter_by(user_id=current_user.id).all()
-    
-    # Prepare data to send to the template for graphing
     habits_data = {}
     for completion in habit_completions:
         habit_name = completion.habit.habit_name
@@ -141,27 +134,18 @@ def analytics():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('home'))  # Redirect to home after logout
+    return redirect(url_for('home'))
 
 # Adding a new habit
 @app.route('/add_habit', methods=['POST'])
 @login_required
 def add_habit():
-    try:
-        habit_name = request.json.get('habit_name')
-        habit_frequency = request.json.get('habit_frequency')
-
-        if not habit_name or not habit_frequency:
-            return jsonify({"error": "Habit name and frequency are required!"}), 400
-
-        # Insert the habit into the database
-        new_habit = Habit(user_id=current_user.id, habit_name=habit_name, habit_frequency=habit_frequency)
-        db.session.add(new_habit)
-        db.session.commit()
-
-        return jsonify({'message': 'Habit added successfully!'}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    habit_name = request.json.get('habit_name')
+    habit_frequency = request.json.get('habit_frequency')
+    new_habit = Habit(user_id=current_user.id, habit_name=habit_name, habit_frequency=habit_frequency)
+    db.session.add(new_habit)
+    db.session.commit()
+    return jsonify({'message': 'Habit added successfully!'}), 200
 
 # Display user's habits
 @app.route('/get_habits')
@@ -180,20 +164,15 @@ def get_habits():
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 @login_required
 def remove_habit(habit_id):
-    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()  # Ensure it's the current user's habit
-
+    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
     if habit:
-        try:
-            db.session.delete(habit)  # Delete the habit
-            db.session.commit()
-            return jsonify({"message": "Habit removed successfully!"}), 200
-        except Exception as e:
-            db.session.rollback()  # Rollback in case of error
-            return jsonify({"message": "Error removing habit."}), 500
+        db.session.delete(habit)
+        db.session.commit()
+        return jsonify({"message": "Habit removed successfully!"}), 200
     else:
         return jsonify({"message": "Habit not found."}), 404
 
-# Update habit completion and calculate streak
+# Update habit completion
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
 @login_required
 def update_habit_completion(habit_id):
@@ -231,7 +210,6 @@ def update_habit_completion(habit_id):
 @login_required
 def habits_on_date(date):
     date_obj = datetime.strptime(date, '%Y-%m-%d').date()
-
     habit_completions = HabitCompletion.query.join(Habit).filter(
         Habit.user_id == current_user.id,
         HabitCompletion.completion_date == date_obj
@@ -245,6 +223,11 @@ def habits_on_date(date):
 
     return jsonify(result)
 
+# Calendar route (needed for the link in dashboard.html)
+@app.route('/calendar')
+@login_required
+def calendar():
+    return render_template('calendar.html')
 
 # Update habit completion for a specific date
 @app.route('/update_habit_status', methods=['POST'])
