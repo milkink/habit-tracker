@@ -57,6 +57,18 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Function to ensure all values are JSON serializable
+def ensure_serializable(data):
+    """ Recursively ensure that all values in the dictionary are serializable to JSON """
+    if isinstance(data, dict):
+        return {key: ensure_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [ensure_serializable(item) for item in data]
+    elif isinstance(data, datetime):
+        return data.strftime('%Y-%m-%d')  # Handle datetime objects
+    else:
+        return data  # Return other types as-is
+
 # Home route
 @app.route('/')
 def home():
@@ -130,8 +142,10 @@ def analytics():
                 habits_data[habit_name]['not_completed'].append(date.strftime('%Y-%m-%d'))
 
         # Clean habits_data to ensure no non-serializable types
-        cleaned_habits_data = {key: {k: (v if v is not None else []) for k, v in value.items()} 
-                               for key, value in habits_data.items()}
+        cleaned_habits_data = ensure_serializable(habits_data)
+
+        # Log cleaned data for debugging
+        app.logger.debug(f"Cleaned Habits Data (After Serialization): {cleaned_habits_data}")
 
         # Pass cleaned data to the template
         return render_template('analytics.html', habits_data=cleaned_habits_data)
