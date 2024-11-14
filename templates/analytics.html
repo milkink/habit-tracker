@@ -1,54 +1,81 @@
+<!-- analytics.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Your Habit Analytics</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- You can add custom styles if needed -->
+    <style>
+        .habit-summary {
+            margin-top: 20px;
+        }
+        .habit-analytics {
+            margin-bottom: 20px;
+        }
+        #habitChart {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        {% block content %}
+        <h1 class="mt-5">Your Habit Analytics</h1>
 
-<h2>Your Habit Completion Analytics</h2>
+        <!-- Chart.js Graph -->
+        <canvas id="habitChart" width="400" height="200"></canvas>
 
-<canvas id="completionChart" width="400" height="200"></canvas>
-
-<script>
-    // Prepare data for the graph (this will be passed from Flask)
-    const completionData = {{ completion_data | tojson | safe }};
-    
-    const labels = Object.keys(completionData);  // Dates
-    const data = Object.values(completionData);  // Completion status (True/False)
-
-    // Map completion status to colors (Green for completed, Red for not completed)
-    const backgroundColors = data.map(isCompleted => isCompleted ? 'green' : 'red');
-
-    // Create the chart
-    const ctx = document.getElementById('completionChart').getContext('2d');
-    const completionChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Habit Completion',
-                data: new Array(data.length).fill(1),  // Display one unit for each date
-                backgroundColor: backgroundColors,
-                borderColor: 'black',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Data passed from the backend
+            const chartData = {{ chart_data | tojson }};
+            
+            // Create a chart using Chart.js
+            const ctx = document.getElementById('habitChart').getContext('2d');
+            const habitChart = new Chart(ctx, {
+                type: 'line', // You can change this to 'bar' if you prefer bar charts
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: chartData.labels,
+                            title: {
+                                display: true,
+                                text: 'Days (Last 30 Days)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Habit Completion Frequency'
+                            },
+                            beginAtZero: true
+                        }
                     }
                 }
-            },
-            responsive: true
-        }
-    });
-</script>
+            });
+        </script>
 
+        <div class="habit-summary">
+            <h2>Habit Completion Summary (Last 30 Days)</h2>
+            
+            {% if habits_data %}
+                {% for habit_name, data in habits_data.items() %}
+                    <div class="habit-analytics">
+                        <h3>{{ habit_name }}</h3>
+                        <p><strong>Completed:</strong> {{ data['completed'] }} times</p>
+                        <p><strong>Not Completed:</strong> {{ data['not_completed'] }} times</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No habit data available for the last 30 days.</p>
+            {% endif %}
+        </div>
+        {% endblock %}
+    </div>
 </body>
 </html>
