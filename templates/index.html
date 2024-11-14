@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Micro-Habit Builder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Link to the manifest file -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <!-- Meta tags for iOS -->
+    <meta name="apple-mobile-web-app-title" content="Micro Habit Builder">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192x192.png') }}">
 </head>
 <body>
 
@@ -20,5 +28,17 @@
         <p>Already have an account? <a href="{{ url_for('login') }}" class="link">Log In</a></p>
     </div>
 
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then((registration) => {
+                    console.log('Service Worker registered with scope: ', registration.scope);
+                }).catch((error) => {
+                    console.log('Service Worker registration failed: ', error);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
