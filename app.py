@@ -111,23 +111,36 @@ def dashboard():
 @app.route('/analytics')
 @login_required
 def analytics():
-    habit_completions = HabitCompletion.query.filter_by(user_id=current_user.id).all()
-    habits_data = {}
-    for completion in habit_completions:
-        habit_name = completion.habit.habit_name
-        date = completion.completion_date
-        is_completed = completion.is_completed
+    try:
+        habit_completions = HabitCompletion.query.filter_by(user_id=current_user.id).all()
 
-        if habit_name not in habits_data:
-            habits_data[habit_name] = {'dates': [], 'completed': [], 'not_completed': []}
+        habits_data = {}
+        for completion in habit_completions:
+            habit_name = completion.habit.habit_name  # Ensure habit_name exists and is not None
+            date = completion.completion_date
+            is_completed = completion.is_completed
 
-        habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
-        if is_completed:
-            habits_data[habit_name]['completed'].append(date.strftime('%Y-%m-%d'))
-        else:
-            habits_data[habit_name]['not_completed'].append(date.strftime('%Y-%m-%d'))
-    
-    return render_template('analytics.html', habits_data=habits_data)
+            if habit_name not in habits_data:
+                habits_data[habit_name] = {'dates': [], 'completed': [], 'not_completed': []}
+
+            habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
+            if is_completed:
+                habits_data[habit_name]['completed'].append(date.strftime('%Y-%m-%d'))
+            else:
+                habits_data[habit_name]['not_completed'].append(date.strftime('%Y-%m-%d'))
+
+        # Clean habits_data to ensure no non-serializable types
+        cleaned_habits_data = {key: {k: (v if v is not None else []) for k, v in value.items()} 
+                               for key, value in habits_data.items()}
+
+        # Pass cleaned data to the template
+        return render_template('analytics.html', habits_data=cleaned_habits_data)
+
+    except Exception as e:
+        app.logger.error(f"Error in analytics route: {e}")
+        flash("An error occurred while loading the analytics.")
+        return redirect(url_for('home'))
+
 
 # Logout route
 @app.route('/logout')
