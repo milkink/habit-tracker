@@ -10,10 +10,10 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to login page if not logged in
 bcrypt = Bcrypt(app)
 
+import os
 # Function to connect to the database
 def connect_db():
-    return sqlite3.connect('habit_tracker.db')
-
+    return psycopg2.connect(os.getenv('DATABASE_URL'))
 # User model
 class User(UserMixin):
     def __init__(self, id, username):
