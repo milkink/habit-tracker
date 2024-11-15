@@ -1,4 +1,3 @@
-<!-- analytics.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Habit Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- You can add custom styles if needed -->
     <style>
         .habit-summary {
             margin-top: 20px;
@@ -28,8 +26,7 @@
             {% for habit_name, data in habits_data.items() %}
                 <div class="habit-graph-container">
                     <h3>{{ habit_name }}</h3>
-                    <!-- Canvas for each habit graph -->
-                    <canvas id="habit-graph-{{ loop.index }}" width="400" height="200"></canvas>
+                    <canvas id="habit-graph-{{ loop.index }}"></canvas>
                 </div>
             {% else %}
                 <p>No habits found. Start adding some!</p>
@@ -38,45 +35,52 @@
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            {% for habit_name, data in habits_data.items() %}
-                // Fetch the completion data for each habit
-                const habitCompletionData = {{ habits_completion_data[data['habit_id']] | tojson }};  // Habit completion data for the last 30 days
-                
-                // Create chart for each habit
-                const ctx = document.getElementById('habit-graph-{{ loop.index }}').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',  // Change this to 'bar' for bar charts
-                    data: {
-                        labels: Array.from({length: 30}, (_, i) => `Day ${i + 1}`),  // Label the x-axis as Day 1, Day 2, ...
-                        datasets: [{
-                            label: '{{ habit_name }} Completion',
-                            data: habitCompletionData,  // 0 for incomplete, 1 for completed
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1,
-                            fill: true  // Fill the area under the line
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Completion (0 = Incomplete, 1 = Completed)'
-                                },
-                                beginAtZero: true
+            const chartData = {{ chart_data|tojson }};
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for habit_name, data in habits_data.items() %}
+                    // Fetch the completion data for each habit
+                    const habitCompletionData = chartData.datasets[{{ loop.index0 }}]?.data || [];
+                    
+                    // Check if the canvas exists and data is valid
+                    const canvas = document.getElementById('habit-graph-{{ loop.index }}');
+                    if (canvas && habitCompletionData.length > 0) {
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',  // Change this to 'bar' for bar charts
+                            data: {
+                                labels: chartData.labels,  // Use real dates
+                                datasets: [{
+                                    label: '{{ habit_name }} Completion',
+                                    data: habitCompletionData,  // 0 for incomplete, 1 for completed
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1,
+                                    fill: true
+                                }]
                             },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Days (Last 30 Days)'
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: 'Completion (0 = Incomplete, 1 = Completed)'
+                                        },
+                                        beginAtZero: true
+                                    },
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: 'Days (Last 30 Days)'
+                                        }
+                                    }
                                 }
                             }
-                        }
+                        });
                     }
-                });
-            {% endfor %}
+                {% endfor %}
+            });
         </script>
 
         <!-- Habit Completion Summary -->
