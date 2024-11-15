@@ -139,30 +139,31 @@ def analytics():
         habits_data = {}
         habits_completion_data = {}  # Store completion data for each habit
 
-        # Process each habit completion
         for completion in habit_completions:
             habit_name = completion.habit.habit_name
             habit_id = completion.habit.id
             date = completion.completion_date
             is_completed = completion.is_completed
 
+            # Initialize habit data
             if habit_name not in habits_data:
                 habits_data[habit_name] = {
                     'dates': [],  # List to store the dates of completion
                     'completed': 0,  # Counter for completed days
                     'not_completed': 0  # Counter for not completed days
                 }
-            
+
             if habit_id not in habits_completion_data:
-                habits_completion_data[habit_name] = [0] * 30  # Initialize with 0 for 30 days
+                habits_completion_data[habit_id] = [0] * 30  # Initialize with 0 for 30 days
 
             # Count completions and non-completions
             index = (date - thirty_days_ago).days
-            if is_completed and index < 30:  # Ensure index is within the 30-day range
-                habits_completion_data[habit_name][index] = 1
-                habits_data[habit_name]['completed'] += 1
-            else:
-                habits_data[habit_name]['not_completed'] += 1
+            if 0 <= index < 30:  # Ensure index is within the 30-day range
+                if is_completed:
+                    habits_completion_data[habit_id][index] = 1
+                    habits_data[habit_name]['completed'] += 1
+                else:
+                    habits_data[habit_name]['not_completed'] += 1
 
             habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
 
@@ -177,7 +178,7 @@ def analytics():
             dataset = {
                 'label': habit_name,
                 'data': [
-                    habits_completion_data[habit_name][i]  # Fetch completion data for each day
+                    habits_completion_data.get(habit_name, [0] * 30)[i]  # Safeguard to prevent 'None'
                     for i in range(30)
                 ],
                 'borderColor': 'rgba(75, 192, 192, 1)',
@@ -186,8 +187,11 @@ def analytics():
             }
             chart_data['datasets'].append(dataset)
 
+        # Check the chart_data output for correctness
+        print(chart_data)
+
         # Return the template with the individual habit graphs and data
-        return render_template('analytics.html', habits_data=habits_data, habits_completion_data=habits_completion_data)
+        return render_template('analytics.html', habits_data=habits_data, habits_completion_data=habits_completion_data, chart_data=chart_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
