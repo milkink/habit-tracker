@@ -1,3 +1,4 @@
+<!-- analytics.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Habit Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- You can add custom styles if needed -->
     <style>
         .habit-summary {
             margin-top: 20px;
@@ -12,74 +14,52 @@
         .habit-analytics {
             margin-bottom: 20px;
         }
-        .habit-graph-container {
-            margin-top: 30px;
+        #habitChart {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        {% block content %}
         <h1 class="mt-5">Your Habit Analytics</h1>
 
-        <!-- Display individual habit graphs -->
-        <div id="habit-analytics">
-            {% if habits_data %}
-                {% for habit_name, data in habits_data.items() %}
-                    <div class="habit-graph-container">
-                        <h3>{{ habit_name }} - Completed: {{ data['completed'] }} times</h3>
-                        <!-- Canvas for each habit graph -->
-                        <canvas id="habit-graph-{{ loop.index }}" width="400" height="200"></canvas>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>No habits found. Start adding some!</p>
-            {% endif %}
-        </div>
+        <!-- Chart.js Graph -->
+        <canvas id="habitChart" width="400" height="200"></canvas>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            {% for habit_name, data in habits_data.items() %}
-                // Fetch the completion data for each habit from habits_completion_data
-                const habitCompletionData = {{ habits_completion_data[loop.index - 1] | tojson }};  // Get the completion data for the habit
-                
-                // Create chart for each habit
-                const ctx = document.getElementById('habit-graph-' + {{ loop.index }}).getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',  // You can change this to 'bar' for bar charts
-                    data: {
-                        labels: Array.from({ length: 30 }, (_, index) => `Day ${index + 1}`),  // Label the x-axis as Day 1, Day 2, ...
-                        datasets: [{
-                            label: '{{ habit_name }} Completion',
-                            data: habitCompletionData,  // 0 for incomplete, 1 for completed
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1,
-                            fill: true  // Fill the area under the line
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Completion (0 = Incomplete, 1 = Completed)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Days'
-                                }
+            // Data passed from the backend
+            const chartData = {{ chart_data | tojson }};
+            
+            // Create a chart using Chart.js
+            const ctx = document.getElementById('habitChart').getContext('2d');
+            const habitChart = new Chart(ctx, {
+                type: 'line', // You can change this to 'bar' if you prefer bar charts
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: chartData.labels,
+                            title: {
+                                display: true,
+                                text: 'Days (Last 30 Days)'
                             }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Habit Completion Frequency'
+                            },
+                            beginAtZero: true
                         }
                     }
-                });
-            {% endfor %}
+                }
+            });
         </script>
 
-        <!-- Habit Completion Summary -->
         <div class="habit-summary">
             <h2>Habit Completion Summary (Last 30 Days)</h2>
             
@@ -95,6 +75,7 @@
                 <p>No habit data available for the last 30 days.</p>
             {% endif %}
         </div>
+        {% endblock %}
     </div>
 </body>
 </html>
