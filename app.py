@@ -137,7 +137,7 @@ def analytics():
 
         # Initialize data structures to hold habit completion counts
         habits_data = {}
-        habits_completion_data = {}  # To store completion data for each habit
+        habits_completion_data = {}  # Store completion data for each habit
 
         for completion in habit_completions:
             habit_name = completion.habit.habit_name
@@ -151,35 +151,40 @@ def analytics():
                     'completed': 0,  # Counter for completed days
                     'not_completed': 0  # Counter for not completed days
                 }
-
             if habit_id not in habits_completion_data:
                 habits_completion_data[habit_id] = [0] * 30  # Initialize with 0 for 30 days
 
             # Count completions and non-completions
-            if is_completed:
+            index = (date - thirty_days_ago).days
+            if is_completed and index < 30:  # Ensure index is within the 30-day range
+                habits_completion_data[habit_id][index] = 1
                 habits_data[habit_name]['completed'] += 1
-                habits_completion_data[habit_id][(date - thirty_days_ago).days] = 1
             else:
                 habits_data[habit_name]['not_completed'] += 1
 
             habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
 
-        # Prepare the data for Chart.js for each habit
-        chart_data = {}
+        # Prepare the data for Chart.js
+        chart_data = {
+            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
+            'datasets': []
+        }
+
         for habit_name, data in habits_data.items():
-            chart_data[habit_name] = {
-                'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
-                'datasets': [{
-                    'label': habit_name,
-                    'data': [data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
-                    'borderColor': 'rgba(75, 192, 192, 1)',
-                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
-                    'fill': False
-                }]
+            dataset = {
+                'label': habit_name,
+                'data': [
+                    data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0
+                    for i in range(30)
+                ],
+                'borderColor': 'rgba(75, 192, 192, 1)',
+                'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                'fill': False,
             }
+            chart_data['datasets'].append(dataset)
 
         # Return the template with the graph data
-        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data, habits_completion_data=habits_completion_data)
+        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
