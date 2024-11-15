@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Micro-Habit Builder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='leaderboard.css') }}">
+</head>
+<body>
+    <!-- Leaderboard Header -->
+    <div class="leaderboard-header">
+        <h2>Leaderboard</h2>
+        <a href="{{ url_for('dashboard') }}" class="back-link">Back to Dashboard</a>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>Total Streak</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rank, user in enumerate(leaderboard, start=1) %}
+            <tr>
+                <td>{{ rank }}</td>
+                <td>{{ user[0] }}</td>
+                <td>{{ user[1] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3">No users found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
