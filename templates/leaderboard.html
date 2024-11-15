@@ -23,11 +23,11 @@
             </tr>
         </thead>
         <tbody>
-            {% for rank, user in enumerate(leaderboard, start=1) %}
+            {% for user in leaderboard %}
             <tr>
-                <td>{{ rank }}</td>
-                <td>{{ user[0] }}</td>
-                <td>{{ user[1] }}</td>
+                <td>{{ loop.index }}</td> <!-- Use `loop.index` for the rank -->
+                <td>{{ user[0] }}</td> <!-- Username -->
+                <td>{{ user[1] }}</td> <!-- Total Streak -->
             </tr>
             {% else %}
             <tr>
