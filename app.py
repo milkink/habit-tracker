@@ -129,11 +129,21 @@ def analytics():
         thirty_days_ago = datetime.now() - timedelta(days=30)
         thirty_days_ago = thirty_days_ago.date()
 
+        # Debugging: Log current_user.id to ensure it's valid
+        app.logger.debug(f"Current User ID: {current_user.id}")
+
         # Query habit completions for the logged-in user from the last 30 days
         habit_completions = HabitCompletion.query.filter(
             HabitCompletion.user_id == current_user.id,
             HabitCompletion.completion_date >= thirty_days_ago
         ).all()
+
+        # Debugging: Check the query results
+        app.logger.debug(f"Found {len(habit_completions)} habit completions for user {current_user.id} in the last 30 days.")
+        
+        if not habit_completions:
+            app.logger.debug("No habit completions found in the last 30 days.")
+            return render_template('analytics.html', habits_data={}, chart_data={}, habits_completion_data={})
 
         # Initialize data structures to hold habit completion counts
         habits_data = {}
@@ -147,6 +157,9 @@ def analytics():
 
             # Calculate the difference between the completion date and 30 days ago
             day_difference = (date - thirty_days_ago).days
+
+            # Debugging: Log the date difference for each completion
+            app.logger.debug(f"Habit: {habit_name}, Completion Date: {date}, Day Difference: {day_difference}")
 
             # Skip any completions outside the 30-day range
             if day_difference < 0 or day_difference >= 30:
@@ -190,6 +203,9 @@ def analytics():
                 'fill': False,
             }
             chart_data['datasets'].append(dataset)
+
+        # Debugging: Output the chart data to check if it's being prepared correctly
+        app.logger.debug(f"Chart data prepared: {chart_data}")
 
         # Return the template with the graph data
         return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data, habits_completion_data=habits_completion_data)
