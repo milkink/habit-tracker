@@ -318,6 +318,19 @@ def habits_on_date(date):
 def calendar():
     return render_template('calendar.html')
 
+@app.route('/leaderboard')
+@login_required
+def leaderboard():
+    # Query to calculate total streaks for all users, including those with no streaks
+    leaderboard_data = db.session.query(
+        User.username,
+        db.func.coalesce(db.func.sum(Habit.streak), 0).label('total_streak')
+    ).outerjoin(Habit, User.id == Habit.user_id)\
+     .group_by(User.username)\
+     .order_by(db.desc('total_streak')).all()
+
+    return render_template('leaderboard.html', leaderboard=leaderboard_data)
+
 # Update habit completion for a specific date
 @app.route('/update_habit_status', methods=['POST'])
 @login_required
