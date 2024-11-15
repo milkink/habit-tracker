@@ -14,6 +14,9 @@
         .habit-analytics {
             margin-bottom: 20px;
         }
+        .habit-graph-container {
+            margin-top: 30px;
+        }
         #habitChart {
             margin-top: 20px;
         }
@@ -24,42 +27,64 @@
         {% block content %}
         <h1 class="mt-5">Your Habit Analytics</h1>
 
-        <!-- Chart.js Graph -->
-        <canvas id="habitChart" width="400" height="200"></canvas>
+        <!-- Display individual habit graphs -->
+        <div id="habit-analytics">
+            {% for habit in habits %}
+                <div class="habit-graph-container">
+                    <h3>{{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}</h3>
+                    <!-- Canvas for each habit graph -->
+                    <canvas id="habit-graph-{{ habit[0] }}" width="400" height="200"></canvas>
+                </div>
+            {% else %}
+                <p>No habits found. Start adding some!</p>
+            {% endfor %}
+        </div>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            // Data passed from the backend
-            const chartData = {{ chart_data | tojson }};
-            
-            // Create a chart using Chart.js
-            const ctx = document.getElementById('habitChart').getContext('2d');
-            const habitChart = new Chart(ctx, {
-                type: 'line', // You can change this to 'bar' if you prefer bar charts
-                data: chartData,
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            type: 'category',
-                            labels: chartData.labels,
-                            title: {
-                                display: true,
-                                text: 'Days (Last 30 Days)'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Habit Completion Frequency'
+            {% for habit in habits %}
+                // Fetch the completion data for each habit (habit[5] should contain daily completion data)
+                const habitId = {{ habit[0] }};
+                const habitCompletionData = {{ habit[5] | tojson }};  // Habit completion data for the last 30 days
+                
+                // Create chart for each habit
+                const ctx = document.getElementById('habit-graph-' + habitId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',  // Change this to 'bar' for bar charts
+                    data: {
+                        labels: habitCompletionData.map((_, index) => `Day ${index + 1}`),  // Label the x-axis as Day 1, Day 2, ...
+                        datasets: [{
+                            label: 'Completion',
+                            data: habitCompletionData,  // 0 for incomplete, 1 for completed
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            fill: true  // Fill the area under the line
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Completion (0 = Incomplete, 1 = Completed)'
+                                }
                             },
-                            beginAtZero: true
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Days'
+                                }
+                            }
                         }
                     }
-                }
-            });
+                });
+            {% endfor %}
         </script>
 
+        <!-- Habit Completion Summary -->
         <div class="habit-summary">
             <h2>Habit Completion Summary (Last 30 Days)</h2>
             
