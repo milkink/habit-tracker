@@ -40,7 +40,7 @@
         <script>
             {% for habit_name, data in habits_data.items() %}
                 // Fetch the completion data for each habit
-                const habitCompletionData = {{ habits_completion_data[loop.index0] | tojson }};  // Habit completion data for the last 30 days
+                const habitCompletionData = {{ habits_completion_data[data['habit_id']] | tojson }};  // Habit completion data for the last 30 days
                 
                 // Create chart for each habit
                 const ctx = document.getElementById('habit-graph-{{ loop.index }}').getContext('2d');
