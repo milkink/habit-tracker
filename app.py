@@ -92,6 +92,7 @@ def signup():
         return redirect(url_for('login'))
     return render_template('signup.html')
 
+
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -108,6 +109,18 @@ def login():
     return render_template('login.html')
 
 # Dashboard route
+# Dashboard route
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    try:
+        habits = Habit.query.filter_by(user_id=current_user.id).all()
+        return render_template('dashboard.html', habits=habits)
+    except Exception as e:
+        app.logger.error(f"Error loading dashboard: {e}")
+        flash("An error occurred while loading the dashboard.")
+        return redirect(url_for('home'))
+
 @app.route('/analytics')
 @login_required
 def analytics():
