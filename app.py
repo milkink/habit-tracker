@@ -138,6 +138,7 @@ def analytics():
         # Initialize data structures to hold habit completion counts
         habits_data = {}
 
+        # Prepare individual data for each habit's completion
         for completion in habit_completions:
             habit_name = completion.habit.habit_name
             date = completion.completion_date
@@ -147,7 +148,8 @@ def analytics():
                 habits_data[habit_name] = {
                     'dates': [],  # List to store the dates of completion
                     'completed': 0,  # Counter for completed days
-                    'not_completed': 0  # Counter for not completed days
+                    'not_completed': 0,  # Counter for not completed days
+                    'daily_completions': []  # List to store daily completion (0 or 1)
                 }
 
             # Count completions and non-completions
@@ -158,24 +160,25 @@ def analytics():
 
             habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
 
-        # Prepare the data for Chart.js
-        chart_data = {
-            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
-            'datasets': []
-        }
+        # Prepare the data for Chart.js for each habit (individual graphs)
+        habit_charts = {}
 
+        # For each habit, prepare data for the chart
         for habit_name, data in habits_data.items():
-            dataset = {
+            daily_completions = [
+                1 if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 
+                for i in range(30)
+            ]
+            habit_charts[habit_name] = {
                 'label': habit_name,
-                'data': [data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
+                'data': daily_completions,  # 1 for completed, 0 for not completed
                 'borderColor': 'rgba(75, 192, 192, 1)',
                 'backgroundColor': 'rgba(75, 192, 192, 0.2)',
                 'fill': False,
             }
-            chart_data['datasets'].append(dataset)
 
-        # Return the template with the graph data
-        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data)
+        # Return the template with the individual habit chart data
+        return render_template('analytics.html', habits_data=habits_data, habit_charts=habit_charts)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
