@@ -26,7 +26,7 @@
             {% for habit_name, data in habits_data.items() %}
                 <div class="habit-graph-container">
                     <h3>{{ habit_name }}</h3>
-                    <canvas id="habit-graph-{{ loop.index }}"></canvas>
+                    <canvas id="habit-graph-{{ loop.index }}" width="400" height="200"></canvas>
                 </div>
             {% else %}
                 <p>No habits found. Start adding some!</p>
@@ -35,24 +35,24 @@
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            const chartData = {{ chart_data|tojson }};
+            const chartData = {{ chart_data | tojson }};
             
             document.addEventListener('DOMContentLoaded', function() {
                 {% for habit_name, data in habits_data.items() %}
-                    // Fetch the completion data for each habit
+                    // Fetch the completion data for each habit using index-based access
                     const habitCompletionData = chartData.datasets[{{ loop.index0 }}]?.data || [];
                     
-                    // Check if the canvas exists and data is valid
+                    // Select the canvas for each habit
                     const canvas = document.getElementById('habit-graph-{{ loop.index }}');
                     if (canvas && habitCompletionData.length > 0) {
                         const ctx = canvas.getContext('2d');
                         new Chart(ctx, {
-                            type: 'line',  // Change this to 'bar' for bar charts
+                            type: 'line',  // Change this to 'bar' for bar charts if preferred
                             data: {
-                                labels: chartData.labels,  // Use real dates
+                                labels: chartData.labels,  // Use provided date labels
                                 datasets: [{
                                     label: '{{ habit_name }} Completion',
-                                    data: habitCompletionData,  // 0 for incomplete, 1 for completed
+                                    data: habitCompletionData,  // Completion data for the habit
                                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                                     borderColor: 'rgba(75, 192, 192, 1)',
                                     borderWidth: 1,
@@ -78,6 +78,8 @@
                                 }
                             }
                         });
+                    } else {
+                        console.warn(`No data or canvas for habit: "{{ habit_name }}"`);
                     }
                 {% endfor %}
             });
