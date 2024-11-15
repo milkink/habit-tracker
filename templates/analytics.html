@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Habit Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- You can add custom styles if needed -->
     <style>
         .habit-summary {
             margin-top: 20px;
@@ -24,47 +25,59 @@
 
         <!-- Display individual habit graphs -->
         <div id="habit-analytics">
-            {% for habit_name, data in chart_data.items() %}
+            {% for habit_name, data in habits_data.items() %}
                 <div class="habit-graph-container">
                     <h3>{{ habit_name }}</h3>
                     <!-- Canvas for each habit graph -->
-                    <canvas id="habit-graph-{{ habit_name }}" width="400" height="200"></canvas>
+                    <canvas id="habit-graph-{{ loop.index }}" width="400" height="200"></canvas>
                 </div>
+            {% else %}
+                <p>No habits found. Start adding some!</p>
+            {% endfor %}
+        </div>
 
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                <script>
-                    // Fetch the completion data for each habit (data contains labels and datasets for this habit)
-                    const habitChartData = {{ data | tojson }};
-                    
-                    // Create chart for each habit
-                    const ctx = document.getElementById('habit-graph-{{ habit_name }}').getContext('2d');
-                    const habitChart = new Chart(ctx, {
-                        type: 'line',  // Change this to 'bar' for bar charts
-                        data: habitChartData,
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    type: 'category',
-                                    labels: habitChartData.labels,
-                                    title: {
-                                        display: true,
-                                        text: 'Days (Last 30 Days)'
-                                    }
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            {% for habit_name, data in habits_data.items() %}
+                // Fetch the completion data for each habit
+                const habitCompletionData = {{ habits_completion_data[loop.index0] | tojson }};  // Habit completion data for the last 30 days
+                
+                // Create chart for each habit
+                const ctx = document.getElementById('habit-graph-{{ loop.index }}').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',  // Change this to 'bar' for bar charts
+                    data: {
+                        labels: Array.from({length: 30}, (_, i) => `Day ${i + 1}`),  // Label the x-axis as Day 1, Day 2, ...
+                        datasets: [{
+                            label: '{{ habit_name }} Completion',
+                            data: habitCompletionData,  // 0 for incomplete, 1 for completed
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            fill: true  // Fill the area under the line
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Completion (0 = Incomplete, 1 = Completed)'
                                 },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Habit Completion Frequency'
-                                    },
-                                    beginAtZero: true
+                                beginAtZero: true
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Days (Last 30 Days)'
                                 }
                             }
                         }
-                    });
-                </script>
+                    }
+                });
             {% endfor %}
-        </div>
+        </script>
 
         <!-- Habit Completion Summary -->
         <div class="habit-summary">
