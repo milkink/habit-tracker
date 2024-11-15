@@ -148,6 +148,7 @@ def analytics():
             # Initialize habit data
             if habit_name not in habits_data:
                 habits_data[habit_name] = {
+                    'habit_id': habit_id,
                     'dates': [],  # List to store the dates of completion
                     'completed': 0,  # Counter for completed days
                     'not_completed': 0  # Counter for not completed days
@@ -187,6 +188,10 @@ def analytics():
             }
             chart_data['datasets'].append(dataset)
 
+        # Ensure the data is JSON-serializable
+        habits_completion_data = ensure_serializable(habits_completion_data)
+
+            
         # Check the chart_data output for correctness
         print(chart_data)
 
