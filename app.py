@@ -129,54 +129,26 @@ def analytics():
         thirty_days_ago = datetime.now() - timedelta(days=30)
         thirty_days_ago = thirty_days_ago.date()
 
-        # Debugging: Log current_user.id to ensure it's valid
-        app.logger.debug(f"Current User ID: {current_user.id}")
-
         # Query habit completions for the logged-in user from the last 30 days
         habit_completions = HabitCompletion.query.filter(
             HabitCompletion.user_id == current_user.id,
             HabitCompletion.completion_date >= thirty_days_ago
         ).all()
 
-        # Debugging: Check the query results
-        app.logger.debug(f"Found {len(habit_completions)} habit completions for user {current_user.id} in the last 30 days.")
-        
-        if not habit_completions:
-            app.logger.debug("No habit completions found in the last 30 days.")
-            return render_template('analytics.html', habits_data={}, chart_data={}, habits_completion_data={})
-
         # Initialize data structures to hold habit completion counts
         habits_data = {}
-        habits_completion_data = {}  # Store completion data for each habit
 
         for completion in habit_completions:
             habit_name = completion.habit.habit_name
-            habit_id = completion.habit.id
             date = completion.completion_date
             is_completed = completion.is_completed
 
-            # Calculate the difference between the completion date and 30 days ago
-            day_difference = (date - thirty_days_ago).days
-
-            # Debugging: Log the date difference for each completion
-            app.logger.debug(f"Habit: {habit_name}, Completion Date: {date}, Day Difference: {day_difference}")
-
-            # Skip any completions outside the 30-day range
-            if day_difference < 0 or day_difference >= 30:
-                continue
-
-            # Initialize habit data if it doesn't exist
             if habit_name not in habits_data:
                 habits_data[habit_name] = {
                     'dates': [],  # List to store the dates of completion
                     'completed': 0,  # Counter for completed days
                     'not_completed': 0  # Counter for not completed days
                 }
-            if habit_id not in habits_completion_data:
-                habits_completion_data[habit_id] = [0] * 30  # Initialize with 0 for 30 days
-
-            # Update the completion data (set 1 if completed, 0 if not completed)
-            habits_completion_data[habit_id][day_difference] = 1 if is_completed else 0
 
             # Count completions and non-completions
             if is_completed:
@@ -184,31 +156,26 @@ def analytics():
             else:
                 habits_data[habit_name]['not_completed'] += 1
 
-            # Append the completion date to the habit's data
             habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
 
-        # Prepare the data for Chart.js (labels are the last 30 days)
+        # Prepare the data for Chart.js
         chart_data = {
             'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
             'datasets': []
         }
 
-        # Prepare chart data for each habit
         for habit_name, data in habits_data.items():
             dataset = {
                 'label': habit_name,
-                'data': [habits_completion_data[habit_id][i] if i < len(habits_completion_data[habit_id]) else 0 for i in range(30)],
+                'data': [data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
                 'borderColor': 'rgba(75, 192, 192, 1)',
                 'backgroundColor': 'rgba(75, 192, 192, 0.2)',
                 'fill': False,
             }
             chart_data['datasets'].append(dataset)
 
-        # Debugging: Output the chart data to check if it's being prepared correctly
-        app.logger.debug(f"Chart data prepared: {chart_data}")
-
         # Return the template with the graph data
-        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data, habits_completion_data=habits_completion_data)
+        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
