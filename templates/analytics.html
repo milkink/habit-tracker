@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Habit Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- You can add custom styles if needed -->
     <style>
         .habit-summary {
             margin-top: 20px;
@@ -17,14 +16,10 @@
         .habit-graph-container {
             margin-top: 30px;
         }
-        #habitChart {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        {% block content %}
         <h1 class="mt-5">Your Habit Analytics</h1>
 
         <!-- Display individual habit graphs -->
@@ -45,7 +40,7 @@
             {% for habit in habits %}
                 // Fetch the completion data for each habit (habit[5] should contain daily completion data)
                 const habitId = {{ habit[0] }};
-                const habitCompletionData = {{ habit[5] | tojson }};  // Habit completion data for the last 30 days
+                const habitCompletionData = {{ habits_completion_data[habit[0]] | tojson }};  // Habit completion data for the last 30 days
                 
                 // Create chart for each habit
                 const ctx = document.getElementById('habit-graph-' + habitId).getContext('2d');
@@ -100,7 +95,6 @@
                 <p>No habit data available for the last 30 days.</p>
             {% endif %}
         </div>
-        {% endblock %}
     </div>
 </body>
 </html>
