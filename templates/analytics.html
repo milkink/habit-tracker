@@ -1,4 +1,3 @@
-<!-- analytics.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,32 +23,33 @@
 
         <!-- Display individual habit graphs -->
         <div id="habit-analytics">
-            {% for habit in habits %}
-                <div class="habit-graph-container">
-                    <h3>{{ habit[1] }} ({{ habit[2] }}) - Streak: {{ habit[4] }}</h3>
-                    <!-- Canvas for each habit graph -->
-                    <canvas id="habit-graph-{{ habit[0] }}" width="400" height="200"></canvas>
-                </div>
+            {% if habits_data %}
+                {% for habit_name, data in habits_data.items() %}
+                    <div class="habit-graph-container">
+                        <h3>{{ habit_name }} - Completed: {{ data['completed'] }} times</h3>
+                        <!-- Canvas for each habit graph -->
+                        <canvas id="habit-graph-{{ loop.index }}" width="400" height="200"></canvas>
+                    </div>
+                {% endfor %}
             {% else %}
                 <p>No habits found. Start adding some!</p>
-            {% endfor %}
+            {% endif %}
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            {% for habit in habits %}
-                // Fetch the completion data for each habit (habit[5] should contain daily completion data)
-                const habitId = {{ habit[0] }};
-                const habitCompletionData = {{ habits_completion_data[habit[0]] | tojson }};  // Habit completion data for the last 30 days
+            {% for habit_name, data in habits_data.items() %}
+                // Fetch the completion data for each habit from habits_completion_data
+                const habitCompletionData = {{ habits_completion_data[loop.index - 1] | tojson }};  // Get the completion data for the habit
                 
                 // Create chart for each habit
-                const ctx = document.getElementById('habit-graph-' + habitId).getContext('2d');
+                const ctx = document.getElementById('habit-graph-' + {{ loop.index }}).getContext('2d');
                 new Chart(ctx, {
-                    type: 'line',  // Change this to 'bar' for bar charts
+                    type: 'line',  // You can change this to 'bar' for bar charts
                     data: {
-                        labels: habitCompletionData.map((_, index) => `Day ${index + 1}`),  // Label the x-axis as Day 1, Day 2, ...
+                        labels: Array.from({ length: 30 }, (_, index) => `Day ${index + 1}`),  // Label the x-axis as Day 1, Day 2, ...
                         datasets: [{
-                            label: 'Completion',
+                            label: '{{ habit_name }} Completion',
                             data: habitCompletionData,  // 0 for incomplete, 1 for completed
                             backgroundColor: 'rgba(75, 192, 192, 0.2)',
                             borderColor: 'rgba(75, 192, 192, 1)',
