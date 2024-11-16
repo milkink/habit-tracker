@@ -272,7 +272,7 @@ def update_habit_completion(habit_id):
                 habit.streak = 1
             else:
                 # Calculate time difference from the last completion (in hours)
-                time_since_last_completion = (datetime.now() - habit.last_completed).total_seconds() / 3600
+                time_since_last_completion = (datetime.now().date() - habit.last_completed).total_seconds() / 3600
 
                 if time_since_last_completion <= 24:
                     # If completed within 24 hours, the streak stays the same
