@@ -108,7 +108,7 @@ def login():
             flash('Invalid username or password')
     return render_template('login.html')
 
-# Dashboard route
+
 # Dashboard route
 @app.route('/dashboard')
 @login_required
@@ -120,7 +120,6 @@ def dashboard():
         app.logger.error(f"Error loading dashboard: {e}")
         flash("An error occurred while loading the dashboard.")
         return redirect(url_for('home'))
-
 @app.route('/analytics')
 @login_required
 def analytics():
@@ -137,6 +136,7 @@ def analytics():
 
         # Initialize data structures to hold habit completion counts
         habits_data = {}
+        streak_data = {}
 
         for completion in habit_completions:
             habit_name = completion.habit.habit_name
@@ -149,14 +149,26 @@ def analytics():
                     'completed': 0,  # Counter for completed days
                     'not_completed': 0  # Counter for not completed days
                 }
+                streak_data[habit_name] = []  # Store the streak data for each habit
 
-            # Count completions and non-completions
+            habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
+
+            # Count completions and non-completions for the chart
             if is_completed:
                 habits_data[habit_name]['completed'] += 1
             else:
                 habits_data[habit_name]['not_completed'] += 1
 
-            habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
+            # Calculate streaks
+            current_streak = 0
+            for i in range(30):
+                day = (datetime.now() - timedelta(days=i)).date()
+                if day in habits_data[habit_name]['dates']:
+                    if is_completed:
+                        current_streak += 1
+                    else:
+                        current_streak = 0
+                streak_data[habit_name].append(current_streak)
 
         # Prepare the data for Chart.js
         chart_data = {
@@ -167,20 +179,37 @@ def analytics():
         for habit_name, data in habits_data.items():
             dataset = {
                 'label': habit_name,
-                'data': [data['completed'] if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
+                'data': [1 if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
                 'borderColor': 'rgba(75, 192, 192, 1)',
                 'backgroundColor': 'rgba(75, 192, 192, 0.2)',
                 'fill': False,
             }
             chart_data['datasets'].append(dataset)
 
+        # Prepare streak chart data for Chart.js
+        streak_chart_data = {
+            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
+            'datasets': []
+        }
+
+        for habit_name, streak in streak_data.items():
+            streak_dataset = {
+                'label': f"{habit_name} Streak",
+                'data': streak,
+                'borderColor': 'rgba(0, 123, 255, 1)',  # Use a different color for streak line
+                'backgroundColor': 'rgba(0, 123, 255, 0.2)',
+                'fill': False,
+            }
+            streak_chart_data['datasets'].append(streak_dataset)
+
         # Return the template with the graph data
-        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data)
+        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data, streak_chart_data=streak_chart_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
         flash("An error occurred while loading the analytics.")
         return redirect(url_for('home'))
+
 
 
 
