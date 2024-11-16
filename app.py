@@ -263,7 +263,7 @@ def update_habit_completion(habit_id):
     if habit:
         if is_completed:
             # Check if the streak has already been updated for today
-            if habit.last_completed and habit.last_completed.date() == current_date:
+            if habit.last_completed and habit.last_completed == current_date:
                 # Streak has already been updated today, don't change it again
                 return jsonify({'message': 'Streak already updated for today.'}), 400
 
@@ -285,11 +285,11 @@ def update_habit_completion(habit_id):
                     habit.streak = 0
 
             # Update last completed date to today
-            habit.last_completed = datetime.now()
+            habit.last_completed = current_date
 
         else:
             # If habit is marked as not completed, reset last completed date to today
-            habit.last_completed = datetime.now()
+            habit.last_completed = current_date
 
     db.session.commit()
     return jsonify({'message': 'Habit completion status updated successfully!'})
