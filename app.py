@@ -114,12 +114,22 @@ def login():
 @login_required
 def dashboard():
     try:
+        # Fetch habits for the logged-in user
         habits = Habit.query.filter_by(user_id=current_user.id).all()
+
+        # Refresh each habit object to ensure we get the latest data (e.g., streak values)
+        for habit in habits:
+            db.session.refresh(habit)  # Refresh the habit to get the latest streak
+
         return render_template('dashboard.html', habits=habits)
+    
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
         flash("An error occurred while loading the dashboard.")
         return redirect(url_for('home'))
+
+
+
 @app.route('/analytics')
 @login_required
 def analytics():
