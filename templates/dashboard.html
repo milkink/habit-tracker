@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Micro-Habit Builder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 
@@ -31,12 +32,13 @@
                 <label>
                     <input type="checkbox" 
                            class="habit-checkbox" 
-                           data-habit-id="{{ habit[0] }}" 
-                           {% if habit[3] == 1 %} checked {% endif %}>
-                    {{ habit[1] }} ({{ habit[2] }}) - Streak: <span id="habit-streak-{{ habit[0] }}">{{ habit[4] }}</span>
+                           data-habit-id="{{ habit.id }}" 
+                           {% if habit.last_completed and habit.last_completed == (now().date()) %} checked {% endif %}>
+                    {{ habit.habit_name }} ({{ habit.frequency }}) - 
+                    Streak: <span id="habit-streak-{{ habit.id }}">{{ habit.streak }}</span>
                 </label>
                 <!-- Remove button for each habit -->
-                <button class="remove-btn" data-habit-id="{{ habit[0] }}">Remove</button>
+                <button class="remove-btn" data-habit-id="{{ habit.id }}">Remove</button>
             </li>
         {% else %}
             <p>No habits found. Start adding some!</p>
@@ -63,9 +65,6 @@
             const habitId = $(this).data('habit-id');
             const isCompleted = $(this).prop('checked') ? 1 : 0;
 
-            // Fetch the current streak
-            const currentStreak = parseInt($("#habit-streak-" + habitId).text());
-
             $.ajax({
                 url: '/update_habit_completion/' + habitId,
                 type: 'PUT',
@@ -73,10 +72,9 @@
                 data: JSON.stringify({ is_completed: isCompleted }),
                 success: function(response) {
                     if (response.streak !== undefined) {
-                        // If the streak has been updated, display the new streak
+                        // Update the streak on the page
                         $("#habit-streak-" + habitId).text(response.streak);
                     } else {
-                        // Show any message from the backend (like already clicked for today)
                         alert(response.message);
                     }
                 },
@@ -125,7 +123,7 @@
                     type: 'DELETE',
                     success: function(response) {
                         alert(response.message);  // Show success message
-                        $(this).closest('li').remove();  // Remove the habit from the list (without reloading the page)
+                        location.reload();  // Reload the page to update the habit list
                     },
                     error: function(error) {
                         alert('Error removing habit.');
