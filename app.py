@@ -315,7 +315,11 @@ def update_habit_completion(habit_id):
             pass
 
     db.session.commit()
-    return jsonify({'message': 'Habit completion status updated successfully!'})
+    return jsonify({
+        'message': 'Habit completion status updated successfully!',
+        'streak': habit.streak
+    })
+    
 
 # Fetch habits completed on a specific date
 @app.route('/habits_on_date/<date>', methods=['GET'])
