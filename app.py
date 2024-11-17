@@ -110,6 +110,8 @@ def login():
 
 
 # Dashboard route
+from datetime import datetime
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -121,7 +123,9 @@ def dashboard():
         for habit in habits:
             db.session.refresh(habit)  # Refresh the habit to get the latest streak
 
-        return render_template('dashboard.html', habits=habits, now=datetime.datetime.now())
+        now = datetime.now()  # Get the current datetime once
+
+        return render_template('dashboard.html', habits=habits, now=now)  # Pass 'now' to the template
     
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
