@@ -33,7 +33,7 @@
                     <input type="checkbox" 
                            class="habit-checkbox" 
                            data-habit-id="{{ habit.id }}" 
-                           {% if habit.last_completed and habit.last_completed == (now().date()) %} checked {% endif %}>
+                           {% if habit.last_completed and habit.last_completed == now.date() %} checked {% endif %}>
                     {{ habit.habit_name }} ({{ habit.frequency }}) - 
                     Streak: <span id="habit-streak-{{ habit.id }}">{{ habit.streak }}</span>
                 </label>
