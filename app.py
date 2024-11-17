@@ -307,7 +307,7 @@ def update_habit_completion(habit_id):
                     habit.streak = 0  # Reset if a day is skipped
             else:
                 # Start the streak if no last_completed record exists
-                habit.streak = 0
+                habit.streak = 1
 
             habit.last_completed = current_date  # Update the last completion date
         else:
