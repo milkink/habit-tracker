@@ -274,61 +274,45 @@ def remove_habit(habit_id):
         return jsonify({"message": "Habit not found."}), 404
 
 
-# Update habit completion
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
 @login_required
 def update_habit_completion(habit_id):
     is_completed = request.json['is_completed']
     current_date = datetime.now().date()
 
-    # Find the completion for today
+    # Find or create today's completion entry
     completion = HabitCompletion.query.filter_by(
         habit_id=habit_id, user_id=current_user.id, completion_date=current_date).first()
 
-    # Get the habit to update its streak
-    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
-
-    if completion:
-        # If the habit was already completed today, prevent further updates
-        if completion.is_completed == is_completed:
-            return jsonify({'message': 'Habit completion already updated for today.'}), 400
-        completion.is_completed = is_completed
-    else:
-        # If there's no completion for today, create a new one
+    if not completion:
         completion = HabitCompletion(
             habit_id=habit_id, user_id=current_user.id, completion_date=current_date, is_completed=is_completed)
         db.session.add(completion)
+    else:
+        if completion.is_completed == is_completed:
+            return jsonify({'message': 'Habit completion already updated for today.'}), 400
+        completion.is_completed = is_completed
+
+    # Update habit streak
+    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
 
     if habit:
         if is_completed:
-            # Check if the streak has already been updated for today
-            if habit.last_completed and habit.last_completed == current_date:
-                # Streak has already been updated today, don't change it again
-                return jsonify({'message': 'Streak already updated for today.'}), 400
+            if habit.last_completed:
+                days_since_last_completion = (current_date - habit.last_completed).days
 
-            if habit.last_completed is None:
-                # If there's no record of the last completion, start the streak
-                habit.streak = 1
+                if days_since_last_completion == 1:
+                    habit.streak += 1  # Increment for consecutive completion
+                elif days_since_last_completion > 1:
+                    habit.streak = 0  # Reset if a day is skipped
             else:
-                # Calculate time difference from the last completion (in hours)
-                time_since_last_completion = (datetime.now().date() - habit.last_completed).total_seconds() / 3600
+                # Start the streak if no last_completed record exists
+                habit.streak = 0
 
-                if time_since_last_completion <= 24:
-                    # If completed within 24 hours, the streak stays the same
-                    pass
-                elif time_since_last_completion > 24 and time_since_last_completion <= 48:
-                    # If 24-48 hours passed (missed 1 day), increment the streak
-                    habit.streak += 1
-                else:
-                    # If more than 48 hours passed without completion, reset the streak
-                    habit.streak = 0
-
-            # Update last completed date to today
-            habit.last_completed = current_date
-
+            habit.last_completed = current_date  # Update the last completion date
         else:
-            # If habit is marked as not completed, reset last completed date to today
-            habit.last_completed = current_date
+            # Do not modify streak or last_completed if not completed
+            pass
 
     db.session.commit()
     return jsonify({'message': 'Habit completion status updated successfully!'})
