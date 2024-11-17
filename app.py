@@ -121,7 +121,7 @@ def dashboard():
         for habit in habits:
             db.session.refresh(habit)  # Refresh the habit to get the latest streak
 
-        return render_template('dashboard.html', habits=habits)
+        return render_template('dashboard.html', habits=habits, now=datetime.now())
     
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
