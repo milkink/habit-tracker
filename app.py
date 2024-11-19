@@ -388,5 +388,26 @@ def update_habit_status():
     db.session.commit()
     return jsonify({'message': 'Habit status updated successfully!'})
 
+
+@app.route('/notifications', methods=['GET'])
+@login_required
+def notifications():
+    # Fetch reminders for the logged-in user within the next hour
+    now = datetime.now()
+    upcoming_reminders = Habit.query.filter(
+        Habit.user_id == current_user.id,
+        Habit.habit_frequency == 'daily',  # Modify based on your reminder logic
+    ).all()
+
+    notifications = []
+    for habit in upcoming_reminders:
+        notifications.append({
+            "title": "Habit Reminder",
+            "message": f"Don't forget to complete your habit: {habit.habit_name}!",
+        })
+
+    return jsonify(notifications)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
