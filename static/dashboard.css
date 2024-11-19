@@ -155,7 +155,6 @@ ul li {
     margin-bottom: 15px;
 }
 
-/* Add these styles to your existing dashboard.css */
 
 .analytics-link-container {
     text-align: center;
@@ -173,6 +172,22 @@ ul li {
 
 .analytics-link:hover {
     background-color: #17a05a;
+}
+
+#notifications-container {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+    max-height: 200px;
+    overflow-y: auto; /* Add scrolling if needed */
+}
+
+#notifications-container p {
+    margin: 0 0 10px;
+    color: #333;
+    font-size: 14px;
 }
 
 
