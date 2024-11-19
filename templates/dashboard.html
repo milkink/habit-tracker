@@ -131,6 +131,35 @@
                 });
             }
         });
+
+        // Fetch and display notifications
+        function loadNotifications() {
+            $.ajax({
+                url: '/notifications',
+                type: 'GET',
+                success: function(notifications) {
+                    const container = $('#notifications-container');
+                    container.empty(); // Clear any existing notifications
+
+                    if (notifications.length === 0) {
+                        container.append('<p>No new notifications.</p>');
+                    } else {
+                        notifications.forEach(notification => {
+                            container.append(`<p>${notification.message}</p>`);
+                        });
+                    }
+                },
+                error: function() {
+                    $('#notifications-container').html('<p>Error loading notifications.</p>');
+                }
+            });
+        }
+
+        // Load notifications on page load
+        $(document).ready(function() {
+            loadNotifications();
+        });
+
     </script>
 
 </body>
