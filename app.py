@@ -389,25 +389,41 @@ def update_habit_status():
     return jsonify({'message': 'Habit status updated successfully!'})
 
 
-@app.route('/notifications', methods=['GET'])
+@app.route('/notifications')
 @login_required
 def notifications():
-    # Fetch reminders for the logged-in user within the next hour
-    now = datetime.now()
-    upcoming_reminders = Habit.query.filter(
-        Habit.user_id == current_user.id,
-        Habit.habit_frequency == 'daily',  # Modify based on your reminder logic
-    ).all()
+    try:
+        # Define notification logic
+        notifications = []
 
-    notifications = []
-    for habit in upcoming_reminders:
-        notifications.append({
-            "title": "Habit Reminder",
-            "message": f"Don't forget to complete your habit: {habit.habit_name}!",
-        })
+        # Check for streak breaks
+        streak_breaks = Habit.query.filter(
+            Habit.user_id == current_user.id,
+            Habit.last_completed < (datetime.now().date() - timedelta(days=1))
+        ).all()
 
-    return jsonify(notifications)
+        for habit in streak_breaks:
+            notifications.append({
+                "message": f"Streak broken for habit '{habit.habit_name}'. Try to rebuild it!"
+            })
 
+        # Add notifications for habits completed today
+        today_completions = HabitCompletion.query.filter_by(
+            user_id=current_user.id,
+            completion_date=datetime.now().date(),
+            is_completed=True
+        ).all()
+
+        for completion in today_completions:
+            notifications.append({
+                "message": f"Great job completing '{completion.habit.habit_name}' today!"
+            })
+
+        return jsonify(notifications), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching notifications: {e}")
+        return jsonify({"error": "Unable to fetch notifications."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
