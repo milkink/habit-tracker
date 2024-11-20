@@ -122,11 +122,9 @@ def dashboard():
 
         now = datetime.now()  # Get the current datetime once
 
-        # Fetch suggestions for the user
-        response = requests.get(f'http://127.0.0.1:5000/suggestions')  # Assuming the suggestions are served on the same app, or you can use fetch if hosted separately.
-        suggested_habits = response.json()
+       
 
-        return render_template('dashboard.html', habits=habits, now=now, suggested_habits=suggested_habits)  # Pass suggested_habits
+        return render_template('dashboard.html', habits=habits, now=now) 
 
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
