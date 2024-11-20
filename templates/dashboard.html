@@ -250,22 +250,7 @@
             }
         });
 
-        // Handle adding suggested habits
-        $(document).on('click', '.add-suggestion-btn', function() {
-            const suggestionId = $(this).data('habit-id');
-
-            $.ajax({
-                url: '/add_suggestion/' + suggestionId,
-                type: 'POST',
-                success: function(response) {
-                    alert(response.message);
-                    location.reload();
-                },
-                error: function(error) {
-                    alert('Error adding suggested habit.');
-                }
-            });
-        });
+        
 
         // Fetch and display notifications
         function loadNotifications() {
@@ -317,6 +302,29 @@
                 }
             });
         }
+
+        // Handle adding suggested habits
+        $(document).on('click', '.add-suggestion-btn', function() {
+            const habitName = $(this).data('habit-name');
+            const habitFrequency = $(this).data('habit-frequency'); // You can use this to specify the frequency or default to 'Daily'
+
+            // Send the habit details to the backend to add it to the user's habits
+            $.ajax({
+                url: '/add_suggestion/' + encodeURIComponent(habitName),
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    habit_frequency: habitFrequency // Send habit frequency (optional)
+                }),
+                success: function(response) {
+                    alert(response.message);
+                    location.reload(); // Reload page after adding the habit
+                },
+                error: function(error) {
+                    alert('Error adding suggested habit.');
+                }
+            });
+        });
 
         // Load notifications and suggested habits on page load
         $(document).ready(function() {
