@@ -156,14 +156,7 @@
     <div class="container mt-4 suggestions-container">
         <h4>Suggested Habits</h4>
         <ul id="suggestions-list" class="list-unstyled">
-            {% for suggestion in suggested_habits %}
-                <li class="suggestion-item">
-                    <span>{{ suggestion.habit_name }} ({{ suggestion.frequency }})</span>
-                    <button class="add-suggestion-btn" data-habit-id="{{ suggestion.id }}">Add</button>
-                </li>
-            {% else %}
-                <p>No suggestions available.</p>
-            {% endfor %}
+            <!-- Suggested habits will be displayed here -->
         </ul>
     </div>
 
@@ -287,7 +280,7 @@
                         container.append('<p>No new notifications.</p>');
                     } else {
                         notifications.forEach(notification => {
-                            container.append(`<p>${notification.message}</p>`);
+                            container.append('<p>' + notification.message + '</p>');
                         });
                     }
                 },
@@ -297,9 +290,38 @@
             });
         }
 
-        // Load notifications on page load
+        // Fetch and display suggested habits
+        function fetchSuggestedHabits() {
+            $.ajax({
+                url: '/suggested_habits',
+                type: 'GET',
+                success: function(suggestions) {
+                    const suggestionsList = $('#suggestions-list');
+                    suggestionsList.empty();
+
+                    if (suggestions.length === 0) {
+                        suggestionsList.append('<p>No suggestions available.</p>');
+                    } else {
+                        suggestions.forEach(suggestion => {
+                            suggestionsList.append(`
+                                <li class="suggestion-item">
+                                    <span>${suggestion.habit_name} (${suggestion.frequency})</span>
+                                    <button class="add-suggestion-btn" data-habit-id="${suggestion.id}">Add</button>
+                                </li>
+                            `);
+                        });
+                    }
+                },
+                error: function() {
+                    $('#suggestions-list').html('<p>Error loading suggestions.</p>');
+                }
+            });
+        }
+
+        // Load notifications and suggested habits on page load
         $(document).ready(function() {
             loadNotifications();
+            fetchSuggestedHabits();
         });
     </script>
 </body>
