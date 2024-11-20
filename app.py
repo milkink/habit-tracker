@@ -430,18 +430,19 @@ def notifications():
 @app.route('/suggestions', methods=['GET'])
 @login_required
 def suggestions():
-    # Define a list of suggested habits
+    # Define a list of suggested habits with unique IDs
     suggested_habits = [
-        {"habit_name": "Drink 8 glasses of water", "habit_frequency": "Daily"},
-        {"habit_name": "Meditate for 10 minutes", "habit_frequency": "Daily"},
-        {"habit_name": "Go for a 30-minute walk", "habit_frequency": "Daily"},
-        {"habit_name": "Read for 15 minutes", "habit_frequency": "Daily"},
-        {"habit_name": "Write in a journal", "habit_frequency": "Daily"},
-        {"habit_name": "Do a 5-minute workout", "habit_frequency": "Daily"},
-        {"habit_name": "Plan tomorrow's tasks", "habit_frequency": "Daily"},
-        {"habit_name": "Disconnect from screens 1 hour before bed", "habit_frequency": "Daily"}
+        {"id": 1, "habit_name": "Drink 8 glasses of water", "habit_frequency": "Daily"},
+        {"id": 2, "habit_name": "Meditate for 10 minutes", "habit_frequency": "Daily"},
+        {"id": 3, "habit_name": "Go for a 30-minute walk", "habit_frequency": "Daily"},
+        {"id": 4, "habit_name": "Read for 15 minutes", "habit_frequency": "Daily"},
+        {"id": 5, "habit_name": "Write in a journal", "habit_frequency": "Daily"},
+        {"id": 6, "habit_name": "Do a 5-minute workout", "habit_frequency": "Daily"},
+        {"id": 7, "habit_name": "Plan tomorrow's tasks", "habit_frequency": "Daily"},
+        {"id": 8, "habit_name": "Disconnect from screens 1 hour before bed", "habit_frequency": "Daily"}
     ]
     return jsonify(suggested_habits), 200
+
 
 # Add suggested habit to the user's habits
 @app.route('/add_suggestion/<habit_name>', methods=['POST'])
