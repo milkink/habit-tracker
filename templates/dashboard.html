@@ -290,11 +290,15 @@
                         suggestions.forEach(suggestion => {
                             suggestionsList.append(`
                                 <li class="suggestion-item">
-                                    <span>${suggestion.habit_name} (${suggestion.frequency})</span>
-                                    <button class="add-suggestion-btn" data-habit-id="${suggestion.id}">Add</button>
+                                    <span>${suggestion.habit_name} (${suggestion.habit_frequency})</span>
+                                    <button class="add-suggestion-btn" 
+                                            data-habit-name="${suggestion.habit_name}"
+                                            data-habit-frequency="${suggestion.habit_frequency}">
+                                        Add
+                                    </button>
                                 </li>
                             `);
-                        });
+                        });                    
                     }
                 },
                 error: function() {
