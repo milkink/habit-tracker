@@ -425,5 +425,39 @@ def notifications():
         app.logger.error(f"Error fetching notifications: {e}")
         return jsonify({"error": "Unable to fetch notifications."}), 500
 
+
+# Suggestions endpoint
+@app.route('/suggestions', methods=['GET'])
+@login_required
+def suggestions():
+    # Define a list of suggested habits
+    suggested_habits = [
+        {"habit_name": "Drink 8 glasses of water", "habit_frequency": "Daily"},
+        {"habit_name": "Meditate for 10 minutes", "habit_frequency": "Daily"},
+        {"habit_name": "Go for a 30-minute walk", "habit_frequency": "Daily"},
+        {"habit_name": "Read for 15 minutes", "habit_frequency": "Daily"},
+        {"habit_name": "Write in a journal", "habit_frequency": "Daily"},
+        {"habit_name": "Do a 5-minute workout", "habit_frequency": "Daily"},
+        {"habit_name": "Plan tomorrow's tasks", "habit_frequency": "Daily"},
+        {"habit_name": "Disconnect from screens 1 hour before bed", "habit_frequency": "Daily"}
+    ]
+    return jsonify(suggested_habits), 200
+
+# Add suggested habit to the user's habits
+@app.route('/add_suggestion/<habit_name>', methods=['POST'])
+@login_required
+def add_suggestion(habit_name):
+    habit_frequency = request.json.get('habit_frequency', 'Daily')  # Default to Daily if not provided
+    existing_habit = Habit.query.filter_by(user_id=current_user.id, habit_name=habit_name).first()
+    
+    if existing_habit:
+        return jsonify({"message": f"Habit '{habit_name}' already exists in your list."}), 400
+
+    new_habit = Habit(user_id=current_user.id, habit_name=habit_name, habit_frequency=habit_frequency)
+    db.session.add(new_habit)
+    db.session.commit()
+    return jsonify({"message": f"Habit '{habit_name}' has been added to your list!"}), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True)
