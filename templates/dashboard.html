@@ -88,7 +88,6 @@
         <p>Loading notifications...</p>
     </div>
 
-    
     <!-- Habit Form -->
     <div class="container habit-form-container">
         <h4>Add a New Habit</h4>
@@ -123,21 +122,6 @@
                 <p>No habits found. Start adding some!</p>
             {% endfor %}
         </ul>
-    </div>
-
-     <!-- Habit Suggestions -->
-    <div class="container suggestion-section">
-        <h4>Suggested Daily Habits</h4>
-        <div id="suggested-habits">
-            <div class="suggestion-habit" data-habit-name="Drink Water" data-habit-frequency="Daily">Drink Water</div>
-            <div class="suggestion-habit" data-habit-name="Exercise" data-habit-frequency="Daily">Exercise</div>
-            <div class="suggestion-habit" data-habit-name="Read a Book" data-habit-frequency="Daily">Read a Book</div>
-            <div class="suggestion-habit" data-habit-name="Meditate" data-habit-frequency="Daily">Meditate</div>
-            <div class="suggestion-habit" data-habit-name="Plan Your Day" data-habit-frequency="Daily">Plan Your Day</div>
-            <div class="suggestion-habit" data-habit-name="Get 8 Hours of Sleep" data-habit-frequency="Daily">Get 8 Hours of Sleep</div>
-            <div class="suggestion-habit" data-habit-name="Limit Screen Time" data-habit-frequency="Daily">Limit Screen Time</div>
-            <div class="suggestion-habit" data-habit-name="Practice Gratitude" data-habit-frequency="Daily">Practice Gratitude</div>
-        </div>
     </div>
 
     <!-- Links Section -->
@@ -243,7 +227,7 @@
                         container.append('<p>No new notifications.</p>');
                     } else {
                         notifications.forEach(notification => {
-                            container.append(`<p>${notification.message}</p>`);
+                            container.append(<p>${notification.message}</p>);
                         });
                     }
                 },
@@ -257,70 +241,6 @@
         $(document).ready(function() {
             loadNotifications();
         });
-
-        
-        // Fetch and display suggested habits
-        function loadSuggestedHabits() {
-            $.ajax({
-                url: '/suggestions', 
-                type: 'GET',
-                success: function (suggestions) {
-                    const container = $('#suggested-habits-list');
-                    container.empty();
-
-                    if (suggestions.length === 0) {
-                        container.append('<p>No suggestions available at the moment.</p>');
-                    } else {
-                        suggestions.forEach((suggestion) => {
-                            const habitButton = `
-                                <button 
-                                    class="btn btn-outline-primary m-2 add-suggestion-btn"
-                                    data-habit-name="${suggestion.habit_name}" 
-                                    data-habit-frequency="${suggestion.habit_frequency}">
-                                    ${suggestion.habit_name} (${suggestion.habit_frequency})
-                                </button>
-                            `;
-                            container.append(habitButton);
-                        });
-                    }
-                },
-                error: function () {
-                    $('#suggested-habits-list').html('<p>Error loading suggestions.</p>');
-                }
-            });
-        }
-
-        // Handle adding suggested habit
-        $(document).on('click', '.add-suggestion-btn', function () {
-            const habitName = $(this).data('habit-name');
-            const habitFrequency = $(this).data('habit-frequency');
-
-            $.ajax({
-                url: `/add_suggestion/${encodeURIComponent(habitName)}`, // Use dynamic URL based on habit_name
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    habit_frequency: habitFrequency
-                }),
-                success: function (response) {
-                    alert(response.message);
-                    location.reload(); // Reload the page to update the "Your Habits" list
-                },
-                error: function (error) {
-                    if (error.responseJSON && error.responseJSON.message) {
-                        alert(error.responseJSON.message);
-                    } else {
-                        alert('Error adding suggested habit.');
-                    }
-                }
-            });
-        });
-
-// Load suggested habits on page load
-$(document).ready(function () {
-    loadSuggestedHabits();
-});
-
     </script>
 </body>
 </html>
