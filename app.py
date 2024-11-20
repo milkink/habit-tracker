@@ -109,9 +109,6 @@ def login():
     return render_template('login.html')
 
 
-# Dashboard route
-from datetime import datetime
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -125,12 +122,17 @@ def dashboard():
 
         now = datetime.now()  # Get the current datetime once
 
-        return render_template('dashboard.html', habits=habits, now=now)  # Pass 'now' to the template
-    
+        # Fetch suggestions for the user
+        response = requests.get(f'http://127.0.0.1:5000/suggestions')  # Assuming the suggestions are served on the same app, or you can use fetch if hosted separately.
+        suggested_habits = response.json()
+
+        return render_template('dashboard.html', habits=habits, now=now, suggested_habits=suggested_habits)  # Pass suggested_habits
+
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {e}")
         flash("An error occurred while loading the dashboard.")
         return redirect(url_for('home'))
+
 
 
 
