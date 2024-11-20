@@ -88,21 +88,7 @@
         <p>Loading notifications...</p>
     </div>
 
-    <!-- Habit Suggestions -->
-    <div class="container suggestion-section">
-        <h4>Suggested Daily Habits</h4>
-        <div id="suggested-habits">
-            <div class="suggestion-habit" data-habit-name="Drink Water" data-habit-frequency="Daily">Drink Water</div>
-            <div class="suggestion-habit" data-habit-name="Exercise" data-habit-frequency="Daily">Exercise</div>
-            <div class="suggestion-habit" data-habit-name="Read a Book" data-habit-frequency="Daily">Read a Book</div>
-            <div class="suggestion-habit" data-habit-name="Meditate" data-habit-frequency="Daily">Meditate</div>
-            <div class="suggestion-habit" data-habit-name="Plan Your Day" data-habit-frequency="Daily">Plan Your Day</div>
-            <div class="suggestion-habit" data-habit-name="Get 8 Hours of Sleep" data-habit-frequency="Daily">Get 8 Hours of Sleep</div>
-            <div class="suggestion-habit" data-habit-name="Limit Screen Time" data-habit-frequency="Daily">Limit Screen Time</div>
-            <div class="suggestion-habit" data-habit-name="Practice Gratitude" data-habit-frequency="Daily">Practice Gratitude</div>
-        </div>
-    </div>
-
+    
     <!-- Habit Form -->
     <div class="container habit-form-container">
         <h4>Add a New Habit</h4>
@@ -137,6 +123,21 @@
                 <p>No habits found. Start adding some!</p>
             {% endfor %}
         </ul>
+    </div>
+
+     <!-- Habit Suggestions -->
+    <div class="container suggestion-section">
+        <h4>Suggested Daily Habits</h4>
+        <div id="suggested-habits">
+            <div class="suggestion-habit" data-habit-name="Drink Water" data-habit-frequency="Daily">Drink Water</div>
+            <div class="suggestion-habit" data-habit-name="Exercise" data-habit-frequency="Daily">Exercise</div>
+            <div class="suggestion-habit" data-habit-name="Read a Book" data-habit-frequency="Daily">Read a Book</div>
+            <div class="suggestion-habit" data-habit-name="Meditate" data-habit-frequency="Daily">Meditate</div>
+            <div class="suggestion-habit" data-habit-name="Plan Your Day" data-habit-frequency="Daily">Plan Your Day</div>
+            <div class="suggestion-habit" data-habit-name="Get 8 Hours of Sleep" data-habit-frequency="Daily">Get 8 Hours of Sleep</div>
+            <div class="suggestion-habit" data-habit-name="Limit Screen Time" data-habit-frequency="Daily">Limit Screen Time</div>
+            <div class="suggestion-habit" data-habit-name="Practice Gratitude" data-habit-frequency="Daily">Practice Gratitude</div>
+        </div>
     </div>
 
     <!-- Links Section -->
@@ -257,28 +258,33 @@
             loadNotifications();
         });
 
+        
+        // Fetch and display suggested habits
         function loadSuggestedHabits() {
             $.ajax({
-                url: '/get_suggested_habits',
+                url: '/get_suggested_habits', // Adjust this URL to match your Flask route
                 type: 'GET',
-                success: function(suggestions) {
+                success: function (suggestions) {
                     const container = $('#suggested-habits-list');
                     container.empty();
 
                     if (suggestions.length === 0) {
                         container.append('<p>No suggestions available at the moment.</p>');
                     } else {
-                        suggestions.forEach(suggestion => {
-                            const habitHtml = `
-                                <li>
-                                    <span>${suggestion.habit_name} (${suggestion.frequency})</span>
-                                    <button class="add-suggestion-btn" data-habit-name="${suggestion.habit_name}" data-habit-frequency="${suggestion.frequency}">Add</button>
-                                </li>`;
-                            container.append(habitHtml);
+                        suggestions.forEach((suggestion) => {
+                            const habitButton = `
+                                <button 
+                                    class="btn btn-outline-primary m-2 add-suggestion-btn"
+                                    data-habit-name="${suggestion.habit_name}" 
+                                    data-habit-frequency="${suggestion.frequency}">
+                                    ${suggestion.habit_name} (${suggestion.frequency})
+                                </button>
+                            `;
+                            container.append(habitButton);
                         });
                     }
                 },
-                error: function() {
+                error: function () {
                     $('#suggested-habits-list').html('<p>Error loading suggestions.</p>');
                 }
             });
