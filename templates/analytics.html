@@ -28,37 +28,7 @@
         <canvas id="habitChart" width="400" height="200"></canvas>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            // Data passed from the backend
-            const chartData = {{ chart_data | tojson }};
-            
-            // Create a chart using Chart.js
-            const ctx = document.getElementById('habitChart').getContext('2d');
-            const habitChart = new Chart(ctx, {
-                type: 'line', // You can change this to 'bar' if you prefer bar charts
-                data: chartData,
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            type: 'category',
-                            labels: chartData.labels,
-                            title: {
-                                display: true,
-                                text: 'Days (Last 30 Days)'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Habit Completion Frequency'
-                            },
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        </script>
+        <script src="/static/analytics.js"></script>
 
         <div class="habit-summary">
             <h2>Habit Completion Summary (Last 30 Days)</h2>
