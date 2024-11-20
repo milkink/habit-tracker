@@ -262,7 +262,7 @@
         // Fetch and display suggested habits
         function loadSuggestedHabits() {
             $.ajax({
-                url: '/get_suggested_habits', // Adjust this URL to match your Flask route
+                url: '/suggestions', 
                 type: 'GET',
                 success: function (suggestions) {
                     const container = $('#suggested-habits-list');
@@ -276,8 +276,8 @@
                                 <button 
                                     class="btn btn-outline-primary m-2 add-suggestion-btn"
                                     data-habit-name="${suggestion.habit_name}" 
-                                    data-habit-frequency="${suggestion.frequency}">
-                                    ${suggestion.habit_name} (${suggestion.frequency})
+                                    data-habit-frequency="${suggestion.habit_frequency}">
+                                    ${suggestion.habit_name} (${suggestion.habit_frequency})
                                 </button>
                             `;
                             container.append(habitButton);
@@ -291,32 +291,36 @@
         }
 
         // Handle adding suggested habit
-        $(document).on('click', '.add-suggestion-btn', function() {
+        $(document).on('click', '.add-suggestion-btn', function () {
             const habitName = $(this).data('habit-name');
             const habitFrequency = $(this).data('habit-frequency');
 
             $.ajax({
-                url: '/add_habit',
+                url: `/add_suggestion/${encodeURIComponent(habitName)}`, // Use dynamic URL based on habit_name
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    habit_name: habitName,
                     habit_frequency: habitFrequency
                 }),
-                success: function(response) {
+                success: function (response) {
                     alert(response.message);
-                    location.reload();
+                    location.reload(); // Reload the page to update the "Your Habits" list
                 },
-                error: function(error) {
-                    alert('Error adding suggested habit.');
+                error: function (error) {
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert('Error adding suggested habit.');
+                    }
                 }
             });
         });
 
-        // Load suggested habits on page load
-        $(document).ready(function() {
-            loadSuggestedHabits();
-        });
+// Load suggested habits on page load
+$(document).ready(function () {
+    loadSuggestedHabits();
+});
+
     </script>
 </body>
 </html>
