@@ -4,8 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Micro-Habit Builder</title>
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .welcome-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .habit-form-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .habit-list li {
+            background-color: #ffffff;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-habit-btn, .remove-btn, .logout-link {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .add-habit-btn:hover, .remove-btn:hover, .logout-link:hover {
+            background-color: #0056b3;
+        }
+
+        .leaderboard-link a, .calendar-link a, .analytics-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .leaderboard-link a:hover, .calendar-link a:hover, .analytics-link a:hover {
+            text-decoration: underline;
+        }
+
+        .notifications-container {
+            background-color: #fff3cd;
+            padding: 15px;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
 
@@ -15,50 +83,65 @@
         <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
     </div>
 
+    <!-- Notifications Area -->
+    <div id="notifications-container" class="notifications-container">
+        <p>Loading notifications...</p>
+    </div>
+
     <!-- Habit Form -->
-    <div class="habit-form-container">
-        <form id="habit-form">
-            <input type="text" id="habit-name" placeholder="Habit Name" required>
-            <input type="text" id="habit-frequency" placeholder="Frequency (e.g., Daily)" required>
+    <div class="container habit-form-container">
+        <h4>Add a New Habit</h4>
+        <form id="habit-form" class="form-inline">
+            <div class="mb-3">
+                <input type="text" id="habit-name" class="form-control" placeholder="Habit Name" required>
+            </div>
+            <div class="mb-3">
+                <input type="text" id="habit-frequency" class="form-control" placeholder="Frequency (e.g., Daily)" required>
+            </div>
             <button type="submit" class="add-habit-btn">Add Habit</button>
         </form>
     </div>
 
     <!-- Habit List -->
-    <h2>Your Habits</h2>
-    <ul id="habit-list">
-        {% for habit in habits %}
-            <li>
-                <label>
-                    <input type="checkbox" 
-                           class="habit-checkbox" 
-                           data-habit-id="{{ habit.id }}" 
-                           {% if habit.last_completed and habit.last_completed == now.date() %} checked {% endif %}>
-                    {{ habit.habit_name }} ({{ habit.frequency }}) - 
-                    Streak: <span id="habit-streak-{{ habit.id }}">{{ habit.streak }}</span>
-                </label>
-                <!-- Remove button for each habit -->
-                <button class="remove-btn" data-habit-id="{{ habit.id }}">Remove</button>
-            </li>
-        {% else %}
-            <p>No habits found. Start adding some!</p>
-        {% endfor %}
-    </ul>
-
-    <!-- Link to Habit Calendar -->
-    <h2><a href="{{ url_for('calendar') }}">View Habit Calendar</a></h2>
-
-    <!-- Link to Analytics -->
-    <h2><a href="{{ url_for('analytics') }}">View Habit Analytics</a></h2>
-
-    <!-- Leaderboard Link -->
-    <div class="leaderboard-link">
-        <h2><a href="{{ url_for('leaderboard') }}">View Leaderboard</a></h2>
+    <div class="container mt-4">
+        <h4>Your Habits</h4>
+        <ul id="habit-list" class="list-unstyled">
+            {% for habit in habits %}
+                <li>
+                    <label>
+                        <input type="checkbox" 
+                               class="habit-checkbox me-2" 
+                               data-habit-id="{{ habit.id }}" 
+                               {% if habit.last_completed and habit.last_completed == now.date() %} checked {% endif %}>
+                        {{ habit.habit_name }} ({{ habit.frequency }}) - 
+                        Streak: <span id="habit-streak-{{ habit.id }}">{{ habit.streak }}</span>
+                    </label>
+                    <button class="remove-btn ms-2" data-habit-id="{{ habit.id }}">Remove</button>
+                </li>
+            {% else %}
+                <p>No habits found. Start adding some!</p>
+            {% endfor %}
+        </ul>
     </div>
 
-    <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Links Section -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <h5><a href="{{ url_for('calendar') }}" class="calendar-link">View Habit Calendar</a></h5>
+            </div>
+            <div class="col-md-4 text-center">
+                <h5><a href="{{ url_for('analytics') }}" class="analytics-link">View Habit Analytics</a></h5>
+            </div>
+            <div class="col-md-4 text-center">
+                <h5><a href="{{ url_for('leaderboard') }}" class="leaderboard-link">View Leaderboard</a></h5>
+            </div>
+        </div>
+    </div>
 
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
         // Handle habit checkbox change
         $(document).on('change', '.habit-checkbox', function() {
@@ -72,7 +155,6 @@
                 data: JSON.stringify({ is_completed: isCompleted }),
                 success: function(response) {
                     if (response.streak !== undefined) {
-                        // Update the streak on the page
                         $("#habit-streak-" + habitId).text(response.streak);
                     } else {
                         alert(response.message);
@@ -105,7 +187,7 @@
                 }),
                 success: function(response) {
                     alert(response.message);
-                    location.reload();  // Reload the page to show the new habit
+                    location.reload();
                 },
                 error: function(error) {
                     alert('Error adding habit.');
@@ -122,8 +204,8 @@
                     url: '/remove_habit/' + habitId,
                     type: 'DELETE',
                     success: function(response) {
-                        alert(response.message);  // Show success message
-                        location.reload();  // Reload the page to update the habit list
+                        alert(response.message);
+                        location.reload();
                     },
                     error: function(error) {
                         alert('Error removing habit.');
@@ -139,7 +221,7 @@
                 type: 'GET',
                 success: function(notifications) {
                     const container = $('#notifications-container');
-                    container.empty(); // Clear any existing notifications
+                    container.empty();
 
                     if (notifications.length === 0) {
                         container.append('<p>No new notifications.</p>');
@@ -159,8 +241,6 @@
         $(document).ready(function() {
             loadNotifications();
         });
-
     </script>
-
 </body>
 </html>
