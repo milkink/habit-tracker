@@ -73,6 +73,34 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+
+        /* Added styling for suggestions section */
+        .suggestions-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item button {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .suggestion-item button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -120,6 +148,21 @@
                 </li>
             {% else %}
                 <p>No habits found. Start adding some!</p>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Suggested Habits Section -->
+    <div class="container mt-4 suggestions-container">
+        <h4>Suggested Habits</h4>
+        <ul id="suggestions-list" class="list-unstyled">
+            {% for suggestion in suggested_habits %}
+                <li class="suggestion-item">
+                    <span>{{ suggestion.habit_name }} ({{ suggestion.frequency }})</span>
+                    <button class="add-suggestion-btn" data-habit-id="{{ suggestion.id }}">Add</button>
+                </li>
+            {% else %}
+                <p>No suggestions available.</p>
             {% endfor %}
         </ul>
     </div>
@@ -212,6 +255,23 @@
                     }
                 });
             }
+        });
+
+        // Handle adding suggested habits
+        $(document).on('click', '.add-suggestion-btn', function() {
+            const suggestionId = $(this).data('habit-id');
+
+            $.ajax({
+                url: '/add_suggested_habit/' + suggestionId,
+                type: 'POST',
+                success: function(response) {
+                    alert(response.message);
+                    location.reload();
+                },
+                error: function(error) {
+                    alert('Error adding suggested habit.');
+                }
+            });
         });
 
         // Fetch and display notifications
