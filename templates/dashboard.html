@@ -255,7 +255,7 @@
             const suggestionId = $(this).data('habit-id');
 
             $.ajax({
-                url: '/add_suggested_habit/' + suggestionId,
+                url: '/add_suggestion/' + suggestionId,
                 type: 'POST',
                 success: function(response) {
                     alert(response.message);
