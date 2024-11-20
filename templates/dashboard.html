@@ -293,7 +293,7 @@
         // Fetch and display suggested habits
         function fetchSuggestedHabits() {
             $.ajax({
-                url: '/suggested_habits',
+                url: '/suggestions',
                 type: 'GET',
                 success: function(suggestions) {
                     const suggestionsList = $('#suggestions-list');
