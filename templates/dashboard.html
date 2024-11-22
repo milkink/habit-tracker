@@ -124,7 +124,12 @@
                 <input type="text" id="habit-name" class="form-control" placeholder="Habit Name" required>
             </div>
             <div class="mb-3">
-                <input type="text" id="habit-frequency" class="form-control" placeholder="Frequency (e.g., Daily)" required>
+                <select id="habit-frequency" class="form-control" required>
+                    <option value="">Select Frequency</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
             </div>
             <button type="submit" class="add-habit-btn">Add Habit</button>
         </form>
