@@ -1,4 +1,3 @@
-<!-- analytics.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Habit Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- You can add custom styles if needed -->
     <style>
         .habit-summary {
             margin-top: 20px;
@@ -14,21 +12,27 @@
         .habit-analytics {
             margin-bottom: 20px;
         }
-        #habitChart {
-            margin-top: 20px;
+        .chart-container {
+            margin: 20px 0;
+            height: 400px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        {% block content %}
         <h1 class="mt-5">Your Habit Analytics</h1>
 
-        <!-- Chart.js Graph -->
-        <canvas id="habitChart" width="400" height="200"></canvas>
+        <!-- Completion Chart -->
+        <div class="chart-container">
+            <h2>Habit Completion History</h2>
+            <canvas id="completionChart"></canvas>
+        </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        
+        <!-- Streak Chart -->
+        <div class="chart-container">
+            <h2>Habit Streaks</h2>
+            <canvas id="streakChart"></canvas>
+        </div>
 
         <div class="habit-summary">
             <h2>Habit Completion Summary (Last 30 Days)</h2>
@@ -45,8 +49,82 @@
                 <p>No habit data available for the last 30 days.</p>
             {% endif %}
         </div>
-        {% endblock %}
     </div>
-    <script src="/static/analytics.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Pass data from Flask to JavaScript
+        const completionChartData = {{ chart_data | tojson | safe }};
+        const streakChartData = {{ streak_chart_data | tojson | safe }};
+
+        // Create completion chart
+        const completionCtx = document.getElementById('completionChart').getContext('2d');
+        new Chart(completionCtx, {
+            type: 'line',
+            data: completionChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Habit Completion Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Completed (1) / Not Completed (0)'
+                        },
+                        min: 0,
+                        max: 1,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Create streak chart
+        const streakCtx = document.getElementById('streakChart').getContext('2d');
+        new Chart(streakCtx, {
+            type: 'line',
+            data: streakChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Habit Streaks'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Streak Length (Days)'
+                        },
+                        min: 0,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
