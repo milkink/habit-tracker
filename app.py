@@ -138,92 +138,118 @@ def dashboard():
 @login_required
 def analytics():
     try:
-        # Get the date for 30 days ago
         thirty_days_ago = datetime.now() - timedelta(days=30)
         thirty_days_ago = thirty_days_ago.date()
 
-        # Query habit completions for the logged-in user from the last 30 days
-        habit_completions = HabitCompletion.query.filter(
+        # Initialize data structures for each frequency
+        habits_data = {
+            'daily': {},
+            'weekly': {},
+            'monthly': {}
+        }
+        
+        # Query all habit completions
+        habit_completions = HabitCompletion.query.join(Habit).filter(
             HabitCompletion.user_id == current_user.id,
             HabitCompletion.completion_date >= thirty_days_ago
         ).all()
 
-        # Initialize data structures to hold habit completion counts
-        habits_data = {}
-        streak_data = {}
-
+        # Process completions by frequency
         for completion in habit_completions:
-            habit_name = completion.habit.habit_name
+            habit = completion.habit
+            frequency = habit.habit_frequency.lower()
+            habit_name = habit.habit_name
             date = completion.completion_date
             is_completed = completion.is_completed
 
-            if habit_name not in habits_data:
-                habits_data[habit_name] = {
-                    'dates': [],  # List to store the dates of completion
-                    'completed': 0,  # Counter for completed days
-                    'not_completed': 0  # Counter for not completed days
+            if habit_name not in habits_data[frequency]:
+                habits_data[frequency][habit_name] = {
+                    'dates': [],
+                    'completed': 0,
+                    'not_completed': 0
                 }
-                streak_data[habit_name] = []  # Store the streak data for each habit
 
-            habits_data[habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
-
-            # Count completions and non-completions for the chart
+            habits_data[frequency][habit_name]['dates'].append(date.strftime('%Y-%m-%d'))
+            
             if is_completed:
-                habits_data[habit_name]['completed'] += 1
+                habits_data[frequency][habit_name]['completed'] += 1
             else:
-                habits_data[habit_name]['not_completed'] += 1
+                habits_data[frequency][habit_name]['not_completed'] += 1
 
-            # Calculate streaks
-            current_streak = 0
+        # Prepare chart data for each frequency
+        chart_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
+        streak_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
+
+        # Generate date labels
+        for freq in ['daily', 'weekly', 'monthly']:
+            dates = []
             for i in range(30):
-                day = (datetime.now() - timedelta(days=i)).date()
-                if day in habits_data[habit_name]['dates']:
-                    if is_completed:
-                        current_streak += 1
-                    else:
-                        current_streak = 0
-                streak_data[habit_name].append(current_streak)
+                current_date = datetime.now() - timedelta(days=i)
+                dates.append(current_date.strftime('%Y-%m-%d'))
+            chart_data[freq]['labels'] = dates
+            streak_data[freq]['labels'] = dates
 
-        # Prepare the data for Chart.js
-        chart_data = {
-            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
-            'datasets': []
-        }
+        # Calculate completion and streak data for each frequency
+        for frequency, habits in habits_data.items():
+            for habit_name, data in habits.items():
+                completion_dataset = {
+                    'label': habit_name,
+                    'data': [],
+                    'borderColor': f'rgba({hash(habit_name) % 256}, {(hash(habit_name) * 2) % 256}, {(hash(habit_name) * 3) % 256}, 1)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'fill': False
+                }
+                
+                streak_dataset = {
+                    'label': f'{habit_name} Streak',
+                    'data': [],
+                    'borderColor': f'rgba({hash(habit_name) % 256}, {(hash(habit_name) * 2) % 256}, {(hash(habit_name) * 3) % 256}, 1)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'fill': False
+                }
 
-        for habit_name, data in habits_data.items():
-            dataset = {
-                'label': habit_name,
-                'data': [1 if f"{(datetime.now() - timedelta(days=i)).date()}" in data['dates'] else 0 for i in range(30)],
-                'borderColor': 'rgba(75, 192, 192, 1)',
-                'backgroundColor': 'rgba(75, 192, 192, 0.2)',
-                'fill': False,
-            }
-            chart_data['datasets'].append(dataset)
+                current_streak = 0
+                for date in chart_data[frequency]['labels']:
+                    # Completion data
+                    completion_dataset['data'].append(1 if date in data['dates'] else 0)
+                    
+                    # Streak calculation based on frequency
+                    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+                    if frequency == 'daily':
+                        if date in data['dates']:
+                            current_streak += 1
+                        else:
+                            current_streak = 0
+                    elif frequency == 'weekly':
+                        week_start = date_obj - timedelta(days=date_obj.weekday())
+                        week_completions = [d for d in data['dates'] if datetime.strptime(d, '%Y-%m-%d').date() >= week_start and 
+                                         datetime.strptime(d, '%Y-%m-%d').date() < week_start + timedelta(days=7)]
+                        if week_completions:
+                            current_streak += 1
+                        else:
+                            current_streak = 0
+                    elif frequency == 'monthly':
+                        month_start = date_obj.replace(day=1)
+                        month_completions = [d for d in data['dates'] if datetime.strptime(d, '%Y-%m-%d').date().month == date_obj.month]
+                        if month_completions:
+                            current_streak += 1
+                        else:
+                            current_streak = 0
+                    
+                    streak_dataset['data'].append(current_streak)
 
-        # Prepare streak chart data for Chart.js
-        streak_chart_data = {
-            'labels': [f"{(datetime.now() - timedelta(days=i)).date()}" for i in range(30)],
-            'datasets': []
-        }
+                chart_data[frequency]['datasets'].append(completion_dataset)
+                streak_data[frequency]['datasets'].append(streak_dataset)
 
-        for habit_name, streak in streak_data.items():
-            streak_dataset = {
-                'label': f"{habit_name} Streak",
-                'data': streak,
-                'borderColor': 'rgba(0, 123, 255, 1)',  # Use a different color for streak line
-                'backgroundColor': 'rgba(0, 123, 255, 0.2)',
-                'fill': False,
-            }
-            streak_chart_data['datasets'].append(streak_dataset)
-
-        # Return the template with the graph data
-        return render_template('analytics.html', habits_data=habits_data, chart_data=chart_data, streak_chart_data=streak_chart_data)
+        return render_template('analytics.html', 
+                             habits_data=habits_data,
+                             chart_data=chart_data,
+                             streak_chart_data=streak_data)
 
     except Exception as e:
         app.logger.error(f"Error in analytics route: {e}")
         flash("An error occurred while loading the analytics.")
         return redirect(url_for('home'))
-
 
 
 
@@ -281,67 +307,71 @@ def remove_habit(habit_id):
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
 @login_required
 def update_habit_completion(habit_id):
-    is_completed = request.json['is_completed']
-    current_date = datetime.now().date()
+    try:
+        is_completed = request.json['is_completed']
+        current_date = datetime.now().date()
 
-    # Find or create today's completion entry
-    completion = HabitCompletion.query.filter_by(
-        habit_id=habit_id, user_id=current_user.id, completion_date=current_date).first()
+        habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
+        if not habit:
+            return jsonify({'message': 'Habit not found'}), 404
 
-    if not completion:
-        completion = HabitCompletion(
-            habit_id=habit_id, user_id=current_user.id, completion_date=current_date, is_completed=is_completed)
-        db.session.add(completion)
-    else:
-        if completion.is_completed == is_completed:
-            return jsonify({'message': 'Habit completion already updated for today.'}), 400
-        completion.is_completed = is_completed
+        completion = HabitCompletion.query.filter_by(
+            habit_id=habit_id, 
+            user_id=current_user.id, 
+            completion_date=current_date
+        ).first()
 
-    # Update habit streak
-    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
+        if not completion:
+            completion = HabitCompletion(
+                habit_id=habit_id,
+                user_id=current_user.id,
+                completion_date=current_date,
+                is_completed=is_completed
+            )
+            db.session.add(completion)
+        else:
+            completion.is_completed = is_completed
 
-    if habit:
+        # Update streak based on frequency
         if is_completed:
             if habit.last_completed:
-                days_since_last_completion = (current_date - habit.last_completed).days
-
-                if days_since_last_completion == 1:
-                    habit.streak += 1  # Increment for consecutive completion
-                elif days_since_last_completion > 1:
-                    habit.streak = 0  # Reset if a day is skipped
+                days_since_last = (current_date - habit.last_completed).days
+                
+                if habit.habit_frequency.lower() == 'daily':
+                    if days_since_last == 1:
+                        habit.streak += 1
+                    elif days_since_last > 1:
+                        habit.streak = 1
+                elif habit.habit_frequency.lower() == 'weekly':
+                    last_week = habit.last_completed.isocalendar()[1]
+                    current_week = current_date.isocalendar()[1]
+                    if current_week - last_week == 1:
+                        habit.streak += 1
+                    elif current_week - last_week > 1:
+                        habit.streak = 1
+                elif habit.habit_frequency.lower() == 'monthly':
+                    last_month = habit.last_completed.month
+                    current_month = current_date.month
+                    months_diff = (current_date.year - habit.last_completed.year) * 12 + current_month - last_month
+                    if months_diff == 1:
+                        habit.streak += 1
+                    elif months_diff > 1:
+                        habit.streak = 1
             else:
-                # Start the streak if no last_completed record exists
                 habit.streak = 1
+            
+            habit.last_completed = current_date
+        
+        db.session.commit()
+        return jsonify({
+            'message': 'Habit completion status updated successfully!',
+            'streak': habit.streak
+        })
 
-            habit.last_completed = current_date  # Update the last completion date
-        else:
-            # Do not modify streak or last_completed if not completed
-            pass
-
-    db.session.commit()
-    return jsonify({
-        'message': 'Habit completion status updated successfully!',
-        'streak': habit.streak
-    })
-    
-
-# Fetch habits completed on a specific date
-@app.route('/habits_on_date/<date>', methods=['GET'])
-@login_required
-def habits_on_date(date):
-    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
-    habit_completions = HabitCompletion.query.join(Habit).filter(
-        Habit.user_id == current_user.id,
-        HabitCompletion.completion_date == date_obj
-    ).all()
-
-    result = [{
-        'habit_name': habit_completion.habit.habit_name,
-        'is_completed': habit_completion.is_completed,
-        'completion_date': habit_completion.completion_date
-    } for habit_completion in habit_completions]
-
-    return jsonify(result)
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating habit completion: {e}")
+        return jsonify({'message': 'An error occurred while updating habit completion'}), 500
 
 # Calendar route (needed for the link in dashboard.html)
 @app.route('/calendar')
