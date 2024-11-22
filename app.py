@@ -48,6 +48,36 @@ class HabitCompletion(db.Model):
     is_completed = db.Column(db.Boolean, nullable=False)
     habit = db.relationship('Habit', backref='habit_completions')
 
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    color = db.Column(db.String(7), default='#007bff')  # Hex color code
+
+class HabitCategory(db.Model):
+    __tablename__ = 'habit_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+
+class HabitNote(db.Model):
+    __tablename__ = 'habit_notes'
+    id = db.Column(db.Integer, primary_key=True)
+    habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    note = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Achievement(db.Model):
+    __tablename__ = 'achievements'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255))
+    badge_icon = db.Column(db.String(50))  # Font Awesome icon class
+    earned_date = db.Column(db.DateTime, default=datetime.utcnow)
+
 # Initialize the database if needed
 with app.app_context():
     db.create_all()
@@ -361,18 +391,24 @@ def update_habit_completion(habit_id):
                 habit.streak = 1
             
             habit.last_completed = current_date
+
+        # Check for new achievements BEFORE committing
+        new_achievements = check_achievements(current_user.id, habit_id)
         
+        # Commit all changes in one transaction
         db.session.commit()
+        
         return jsonify({
             'message': 'Habit completion status updated successfully!',
-            'streak': habit.streak
+            'streak': habit.streak,
+            'new_achievements': new_achievements
         })
 
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error updating habit completion: {e}")
         return jsonify({'message': 'An error occurred while updating habit completion'}), 500
-
+        
 # Calendar route (needed for the link in dashboard.html)
 @app.route('/calendar')
 @login_required
@@ -488,6 +524,102 @@ def add_suggestion(habit_name):
     db.session.add(new_habit)
     db.session.commit()
     return jsonify({"message": f"Habit '{habit_name}' has been added to your list!"}), 200
+
+@app.route('/categories', methods=['GET', 'POST'])
+@login_required
+def categories():
+    if request.method == 'POST':
+        name = request.json.get('name')
+        color = request.json.get('color', '#007bff')
+        category = Category(name=name, color=color, user_id=current_user.id)
+        db.session.add(category)
+        db.session.commit()
+        return jsonify({'message': 'Category added successfully', 'id': category.id})
+    
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{'id': c.id, 'name': c.name, 'color': c.color} for c in categories])
+
+@app.route('/habit/<int:habit_id>/notes', methods=['GET', 'POST'])
+@login_required
+def habit_notes(habit_id):
+    if request.method == 'POST':
+        note_text = request.json.get('note')
+        note = HabitNote(habit_id=habit_id, user_id=current_user.id, note=note_text)
+        db.session.add(note)
+        db.session.commit()
+        return jsonify({'message': 'Note added successfully'})
+    
+    notes = HabitNote.query.filter_by(habit_id=habit_id, user_id=current_user.id)\
+        .order_by(HabitNote.date.desc()).all()
+    return jsonify([{
+        'id': note.id,
+        'note': note.note,
+        'date': note.date.strftime('%Y-%m-%d %H:%M')
+    } for note in notes])
+
+@app.route('/achievements')
+@login_required
+def achievements():
+    user_achievements = Achievement.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{
+        'name': a.name,
+        'description': a.description,
+        'badge_icon': a.badge_icon,
+        'earned_date': a.earned_date.strftime('%Y-%m-%d')
+    } for a in user_achievements])
+
+def check_achievements(user_id, habit_id):
+    """Check and award achievements based on user's habit completion"""
+    try:
+        # Get all habits for the user
+        habits = Habit.query.filter_by(user_id=user_id).all()
+        total_streak = sum(habit.streak for habit in habits)
+        
+        # Achievement criteria
+        achievements = []
+        
+        # First Habit Achievement
+        if len(habits) == 1:
+            achievements.append({
+                'name': 'Habit Pioneer',
+                'description': 'Created your first habit!',
+                'badge_icon': 'fa-star'
+            })
+        
+        # Streak Achievements
+        streak_achievements = [
+            (7, 'Week Warrior', 'Maintained a 7-day streak', 'fa-fire'),
+            (30, 'Monthly Master', 'Maintained a 30-day streak', 'fa-crown'),
+            (100, 'Habit Hero', 'Maintained a 100-day streak', 'fa-trophy')
+        ]
+        
+        for streak, name, desc, icon in streak_achievements:
+            if total_streak >= streak:
+                existing = Achievement.query.filter_by(
+                    user_id=user_id, name=name).first()
+                if not existing:
+                    achievements.append({
+                        'name': name,
+                        'description': desc,
+                        'badge_icon': icon
+                    })
+        
+        # Add new achievements to database
+        for achievement in achievements:
+            new_achievement = Achievement(
+                user_id=user_id,
+                name=achievement['name'],
+                description=achievement['description'],
+                badge_icon=achievement['badge_icon']
+            )
+            db.session.add(new_achievement)
+        
+        db.session.commit()
+        
+        return achievements
+    except Exception as e:
+        app.logger.error(f"Error checking achievements: {e}")
+        return []
 
 
 if __name__ == '__main__':
