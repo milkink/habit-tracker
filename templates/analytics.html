@@ -16,59 +16,103 @@
             margin: 20px 0;
             height: 400px;
         }
+        .frequency-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="mt-5">Your Habit Analytics</h1>
 
-        <!-- Completion Chart -->
-        <div class="chart-container">
-            <h2>Habit Completion History</h2>
-            <canvas id="completionChart"></canvas>
+        <!-- Daily Habits Section -->
+        <div class="frequency-section">
+            <h2>Daily Habits</h2>
+            <div class="chart-container">
+                <h3>Completion History</h3>
+                <canvas id="dailyCompletionChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Streaks</h3>
+                <canvas id="dailyStreakChart"></canvas>
+            </div>
         </div>
 
-        <!-- Streak Chart -->
-        <div class="chart-container">
-            <h2>Habit Streaks</h2>
-            <canvas id="streakChart"></canvas>
+        <!-- Weekly Habits Section -->
+        <div class="frequency-section">
+            <h2>Weekly Habits</h2>
+            <div class="chart-container">
+                <h3>Completion History</h3>
+                <canvas id="weeklyCompletionChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Streaks</h3>
+                <canvas id="weeklyStreakChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Habits Section -->
+        <div class="frequency-section">
+            <h2>Monthly Habits</h2>
+            <div class="chart-container">
+                <h3>Completion History</h3>
+                <canvas id="monthlyCompletionChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Streaks</h3>
+                <canvas id="monthlyStreakChart"></canvas>
+            </div>
         </div>
 
         <div class="habit-summary">
             <h2>Habit Completion Summary (Last 30 Days)</h2>
-            
-            {% if habits_data %}
-                {% for habit_name, data in habits_data.items() %}
-                    <div class="habit-analytics">
-                        <h3>{{ habit_name }}</h3>
-                        <p><strong>Completed:</strong> {{ data['completed'] }} times</p>
-                        <p><strong>Not Completed:</strong> {{ data['not_completed'] }} times</p>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>No habit data available for the last 30 days.</p>
-            {% endif %}
+            {% for frequency in ['daily', 'weekly', 'monthly'] %}
+                <h3 class="mt-4">{{ frequency|title }} Habits</h3>
+                {% if habits_data[frequency] %}
+                    {% for habit_name, data in habits_data[frequency].items() %}
+                        <div class="habit-analytics">
+                            <h4>{{ habit_name }}</h4>
+                            <p><strong>Completed:</strong> {{ data['completed'] }} times</p>
+                            <p><strong>Not Completed:</strong> {{ data['not_completed'] }} times</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No {{ frequency }} habits data available.</p>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Pass data from Flask to JavaScript
-        const completionChartData = {{ chart_data | tojson | safe }};
-        const streakChartData = {{ streak_chart_data | tojson | safe }};
+        const chartData = {{ chart_data | tojson | safe }};
+        const streakData = {{ streak_chart_data | tojson | safe }};
 
-        // Create completion chart
-        const completionCtx = document.getElementById('completionChart').getContext('2d');
-        new Chart(completionCtx, {
-            type: 'line',
-            data: completionChartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
+        function createChart(ctx, data, options) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    ...options,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
+
+        // Create charts for each frequency type
+        ['daily', 'weekly', 'monthly'].forEach(frequency => {
+            // Completion charts
+            const completionCtx = document.getElementById(`${frequency}CompletionChart`).getContext('2d');
+            createChart(completionCtx, chartData[frequency], {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Habit Completion Over Time'
+                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Completion`
                     }
                 },
                 scales: {
@@ -90,21 +134,15 @@
                         }
                     }
                 }
-            }
-        });
+            });
 
-        // Create streak chart
-        const streakCtx = document.getElementById('streakChart').getContext('2d');
-        new Chart(streakCtx, {
-            type: 'line',
-            data: streakChartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
+            // Streak charts
+            const streakCtx = document.getElementById(`${frequency}StreakChart`).getContext('2d');
+            createChart(streakCtx, streakData[frequency], {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Habit Streaks'
+                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Streaks`
                     }
                 },
                 scales: {
@@ -117,13 +155,13 @@
                     y: {
                         title: {
                             display: true,
-                            text: 'Streak Length (Days)'
+                            text: 'Streak Length'
                         },
                         min: 0,
                         beginAtZero: true
                     }
                 }
-            }
+            });
         });
     </script>
 </body>
