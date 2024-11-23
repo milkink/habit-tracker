@@ -1,0 +1,74 @@
+/* Reminders styles */
+.reminder-card {
+  transition: all 0.3s ease;
+}
+
+.reminder-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Challenges styles */
+.challenge-card {
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
+}
+
+.challenge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.challenge-title {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.challenge-description {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.challenge-details {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Dark mode styles */
+.dark-mode {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.dark-mode .card,
+.dark-mode .reminder-card,
+.dark-mode .challenge-card {
+  background-color: #2d2d2d !important;
+  color: #ffffff;
+}
+
+.dark-mode .challenge-title {
+  color: #ffffff;
+}
+
+.dark-mode .challenge-description {
+  color: #cccccc;
+}
+
+/* Form styles */
+.custom-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.form-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.dark-mode .form-section {
+  background: #2d2d2d;
+}
