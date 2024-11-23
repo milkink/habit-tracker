@@ -1,60 +1,64 @@
 // Calendar initialization and functions
 function initializeCalendar() {
-    $('#calendar').fullCalendar({
-        header: {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'month,agendaWeek,agendaDay'
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: function(start, end, timezone, callback) {
-            $.ajax({
-                url: '/get_habits',
-                dataType: 'json',
-                success: function(data) {
-                    var events = [];
-                    data.forEach(function(habit) {
-                        var eventColor = habit.is_completed ? 'green' : 'red';
-                        events.push({
-                            title: habit.habit_name,
-                            start: habit.completion_date,
-                            backgroundColor: eventColor,
-                            textColor: 'white',
-                            description: habit.habit_name,
-                            allDay: true
-                        });
-                    });
-                    callback(events);
-                }
-            });
+        events: function(info, successCallback, failureCallback) {
+            fetch('/get_habits')
+                .then(response => response.json())
+                .then(data => {
+                    const events = data.map(habit => ({
+                        title: habit.habit_name,
+                        start: habit.completion_date,
+                        backgroundColor: habit.is_completed ? '#4CAF50' : '#f44336',
+                        textColor: 'white',
+                        description: habit.habit_name,
+                        allDay: true
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                    failureCallback(error);
+                });
         },
-        dayClick: function(date, jsEvent, view) {
-            var dateStr = date.format('YYYY-MM-DD');
-            fetchHabitsForDate(dateStr);
+        dateClick: function(info) {
+            fetchHabitsForDate(info.dateStr);
         },
-        eventClick: function(calEvent, jsEvent, view) {
-            var dateStr = moment(calEvent.start).format('YYYY-MM-DD');
-            fetchHabitsForDate(dateStr);
+        eventClick: function(info) {
+            fetchHabitsForDate(info.event.start.toISOString().split('T')[0]);
         }
     });
+
+    calendar.render();
 }
 
 function fetchHabitsForDate(date) {
-    $.ajax({
-        url: '/habits_on_date/' + date,
-        method: 'GET',
-        success: function(data) {
+    fetch('/habits_on_date/' + date)
+        .then(response => response.json())
+        .then(data => {
             displayHabitsInModal(date, data);
-        },
-        error: function(xhr, status, error) {
+        })
+        .catch(error => {
             console.error('Error fetching habits:', error);
-        }
-    });
+        });
 }
 
 function displayHabitsInModal(date, habits) {
     const habitList = document.getElementById('habit-list');
     const modalDate = document.getElementById('modal-date');
-    const formattedDate = moment(date).format('MMMM D, YYYY');
+    const formattedDate = new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
     
     modalDate.textContent = formattedDate;
     habitList.innerHTML = '';
