@@ -4,6 +4,11 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 import os
+from datetime import datetime, timedelta
+import json
+from flask_mail import Mail, Message
+import csv
+from io import StringIO
 
 # Initialize Flask app and configuration
 app = Flask(__name__)
@@ -15,10 +20,19 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
+
 # Initialize SQLAlchemy and Flask-Login
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to login page if not logged in
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@gmail.com'  # Configure with real email
+app.config['MAIL_PASSWORD'] = 'your-password'  # Configure with real password
+mail = Mail(app)
 
 # Define User model using SQLAlchemy ORM
 class User(UserMixin, db.Model):
@@ -77,6 +91,40 @@ class Achievement(db.Model):
     description = db.Column(db.String(255))
     badge_icon = db.Column(db.String(50))  # Font Awesome icon class
     earned_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Reminder(db.Model):
+    __tablename__ = 'reminders'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    days = db.Column(db.String(50))  # Stored as comma-separated days (e.g., "Mon,Wed,Fri")
+    enabled = db.Column(db.Boolean, default=True)
+
+class Challenge(db.Model):
+    __tablename__ = 'challenges'
+    id = db.Column(db.Integer, primary_key=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    habit_id = db.Column(db.Integer, db.ForeignKey('habits.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    participants = db.relationship('User', secondary='challenge_participants')
+
+class ChallengeParticipant(db.Model):
+    __tablename__ = 'challenge_participants'
+    id = db.Column(db.Integer, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    join_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserPreference(db.Model):
+    __tablename__ = 'user_preferences'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dark_mode = db.Column(db.Boolean, default=False)
+    email_notifications = db.Column(db.Boolean, default=True)
 
 # Initialize the database if needed
 with app.app_context():
@@ -655,6 +703,149 @@ def check_achievements(user_id, habit_id):
     except Exception as e:
         app.logger.error(f"Error checking achievements: {e}")
         return []
+
+@app.route('/reminders', methods=['GET', 'POST'])
+@login_required
+def reminders():
+    if request.method == 'POST':
+        data = request.json
+        reminder = Reminder(
+            user_id=current_user.id,
+            habit_id=data['habit_id'],
+            time=datetime.strptime(data['time'], '%H:%M').time(),
+            days=','.join(data['days']),
+            enabled=True
+        )
+        db.session.add(reminder)
+        db.session.commit()
+        return jsonify({'message': 'Reminder set successfully!'})
+    
+    reminders = Reminder.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{
+        'id': r.id,
+        'habit_id': r.habit_id,
+        'time': r.time.strftime('%H:%M'),
+        'days': r.days.split(','),
+        'enabled': r.enabled
+    } for r in reminders])
+
+@app.route('/challenges', methods=['GET', 'POST'])
+@login_required
+def challenges():
+    if request.method == 'POST':
+        data = request.json
+        challenge = Challenge(
+            creator_id=current_user.id,
+            habit_id=data['habit_id'],
+            name=data['name'],
+            description=data['description'],
+            start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
+            end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+        )
+        db.session.add(challenge)
+        db.session.commit()
+        return jsonify({'message': 'Challenge created successfully!'})
+    
+    # Get both created and participated challenges
+    created_challenges = Challenge.query.filter_by(creator_id=current_user.id).all()
+    participated_challenges = Challenge.query.join(ChallengeParticipant).filter(
+        ChallengeParticipant.user_id == current_user.id
+    ).all()
+    
+    all_challenges = list(set(created_challenges + participated_challenges))
+    return jsonify([{
+        'id': c.id,
+        'name': c.name,
+        'description': c.description,
+        'start_date': c.start_date.strftime('%Y-%m-%d'),
+        'end_date': c.end_date.strftime('%Y-%m-%d'),
+        'participant_count': len(c.participants)
+    } for c in all_challenges])
+
+@app.route('/join_challenge/<int:challenge_id>', methods=['POST'])
+@login_required
+def join_challenge(challenge_id):
+    challenge = Challenge.query.get_or_404(challenge_id)
+    if current_user not in challenge.participants:
+        participant = ChallengeParticipant(challenge_id=challenge_id, user_id=current_user.id)
+        db.session.add(participant)
+        db.session.commit()
+        return jsonify({'message': 'Joined challenge successfully!'})
+    return jsonify({'message': 'Already participating in this challenge'}), 400
+
+@app.route('/export_stats', methods=['GET'])
+@login_required
+def export_stats():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Query habit completions
+    completions = HabitCompletion.query.filter(
+        HabitCompletion.user_id == current_user.id,
+        HabitCompletion.completion_date >= start_date,
+        HabitCompletion.completion_date <= end_date
+    ).all()
+    
+    # Create CSV
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['Habit', 'Date', 'Completed'])
+    
+    for completion in completions:
+        habit = Habit.query.get(completion.habit_id)
+        cw.writerow([
+            habit.habit_name,
+            completion.completion_date.strftime('%Y-%m-%d'),
+            'Yes' if completion.is_completed else 'No'
+        ])
+    
+    output = si.getvalue()
+    si.close()
+    
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=habit_stats.csv'}
+    )
+
+@app.route('/preferences', methods=['GET', 'PUT'])
+@login_required
+def preferences():
+    if request.method == 'PUT':
+        data = request.json
+        pref = UserPreference.query.filter_by(user_id=current_user.id).first()
+        if not pref:
+            pref = UserPreference(user_id=current_user.id)
+            db.session.add(pref)
+        
+        pref.dark_mode = data.get('dark_mode', pref.dark_mode)
+        pref.email_notifications = data.get('email_notifications', pref.email_notifications)
+        db.session.commit()
+        return jsonify({'message': 'Preferences updated successfully!'})
+    
+    pref = UserPreference.query.filter_by(user_id=current_user.id).first()
+    if not pref:
+        pref = UserPreference(user_id=current_user.id)
+        db.session.add(pref)
+        db.session.commit()
+    
+    return jsonify({
+        'dark_mode': pref.dark_mode,
+        'email_notifications': pref.email_notifications
+    })
+
+# Add this function to handle reminder emails
+def send_reminder_email(user_id, habit_id):
+    user = User.query.get(user_id)
+    habit = Habit.query.get(habit_id)
+    
+    msg = Message(
+        'Habit Reminder',
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[user.email]
+    )
+    msg.body = f"Don't forget to complete your habit: {habit.habit_name}"
+    mail.send(msg)
 
 
 if __name__ == '__main__':
