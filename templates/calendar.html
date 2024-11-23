@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Habit Tracker - Calendar</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.10/index.global.min.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -22,9 +23,14 @@
         }
         #calendar {
             margin-top: 20px;
+            height: 800px;
+        }
+        .fc {
+            max-width: 1140px;
+            margin: 0 auto;
         }
         .fc-header-toolbar {
-            margin-bottom: 1.5em;
+            margin-bottom: 1.5em !important;
         }
         .fc-daygrid-day-number {
             font-weight: bold;
@@ -32,7 +38,7 @@
         }
         .fc-event {
             cursor: pointer;
-            border: none;
+            border: none !important;
             padding: 2px 4px;
         }
         .fc-event-title {
@@ -115,8 +121,6 @@
         <button class="close-button" onclick="closeModal()">Close</button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.js"></script>
     <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
