@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fetchReminders = async () => {
     try {
-      const response = await fetch('/api/reminders');
+      const response = await fetch('/reminders');
       const reminders = await response.json();
       
       remindersContainer.innerHTML = reminders.map(reminder => `
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/api/reminders', {
+      const response = await fetch('/reminders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
