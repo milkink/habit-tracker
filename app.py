@@ -704,129 +704,293 @@ def check_achievements(user_id, habit_id):
         app.logger.error(f"Error checking achievements: {e}")
         return []
 
-@app.route('/reminders')
-@login_required
-def reminders():
-    try:
-        habits = Habit.query.filter_by(user_id=current_user.id).all()
-        now = datetime.now()  
-        return render_template('reminders.html', habits=habits, now=now)
-    except Exception as e:
-        app.logger.error(f"Error loading reminders: {e}")
-        flash("An error occurred while loading reminders.")
-        return redirect(url_for('dashboard'))
-
-@app.route('/challenges')
-@login_required
-def challenges():
-    try:
-        habits = Habit.query.filter_by(user_id=current_user.id).all()
-        now = datetime.now()  
-        return render_template('challenges.html', habits=habits, now=now)
-    except Exception as e:
-        app.logger.error(f"Error loading challenges: {e}")
-        flash("An error occurred while loading challenges.")
-        return redirect(url_for('dashboard'))
-
 @app.route('/preferences')
 @login_required
 def preferences():
     try:
-        now = datetime.now()  
-        return render_template('preferences.html', now=now)
-    except Exception as e:
-        app.logger.error(f"Error loading preferences: {e}")
-        flash("An error occurred while loading preferences.")
+        user_preferences = UserPreference.query.filter_by(user_id=current_user.id).first()
+        if not user_preferences:
+            user_preferences = UserPreference(user_id=current_user.id)
+            db.session.add(user_preferences)
+            db.session.commit()
+        
+        return render_template('preferences.html', 
+                             preferences=user_preferences,
+                             now=datetime.now())
+    except SQLAlchemyError as e:
+        logger.error(f"Error loading preferences page: {e}")
+        flash("Unable to load preferences. Please try again.", "error")
         return redirect(url_for('dashboard'))
-
-@app.route('/api/reminders', methods=['GET', 'POST'])
-@login_required
-def api_reminders():
-    if request.method == 'POST':
-        data = request.json
-        reminder = Reminder(
-            user_id=current_user.id,
-            habit_id=data['habit_id'],
-            time=datetime.strptime(data['time'], '%H:%M').time(),
-            days=','.join(data['days']),
-            enabled=True
-        )
-        db.session.add(reminder)
-        db.session.commit()
-        return jsonify({'message': 'Reminder set successfully!'})
-    
-    reminders = Reminder.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{
-        'id': r.id,
-        'habit_id': r.habit_id,
-        'habit_name': Habit.query.get(r.habit_id).habit_name,
-        'time': r.time.strftime('%H:%M'),
-        'days': r.days.split(','),
-        'enabled': r.enabled
-    } for r in reminders])
-
-@app.route('/api/challenges', methods=['GET', 'POST'])
-@login_required
-def api_challenges():
-    if request.method == 'POST':
-        data = request.json
-        challenge = Challenge(
-            creator_id=current_user.id,
-            habit_id=data['habit_id'],
-            name=data['name'],
-            description=data['description'],
-            start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
-            end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date()
-        )
-        db.session.add(challenge)
-        db.session.commit()
-        return jsonify({'message': 'Challenge created successfully!'})
-    
-    # Get both created and participated challenges
-    created_challenges = Challenge.query.filter_by(creator_id=current_user.id).all()
-    participated_challenges = Challenge.query.join(ChallengeParticipant).filter(
-        ChallengeParticipant.user_id == current_user.id
-    ).all()
-    
-    all_challenges = list(set(created_challenges + participated_challenges))
-    return jsonify([{
-        'id': c.id,
-        'name': c.name,
-        'description': c.description,
-        'start_date': c.start_date.strftime('%Y-%m-%d'),
-        'end_date': c.end_date.strftime('%Y-%m-%d'),
-        'participant_count': len(c.participants),
-        'isParticipating': current_user in c.participants
-    } for c in all_challenges])
 
 @app.route('/api/preferences', methods=['GET', 'PUT'])
 @login_required
 def api_preferences():
-    if request.method == 'PUT':
-        data = request.json
+    try:
         pref = UserPreference.query.filter_by(user_id=current_user.id).first()
+        
+        if request.method == 'PUT':
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+
+            if not pref:
+                pref = UserPreference(user_id=current_user.id)
+                db.session.add(pref)
+
+            # Update preferences
+            for key in ['dark_mode', 'email_notifications']:
+                if key in data:
+                    setattr(pref, key, data[key])
+
+            db.session.commit()
+            return jsonify({
+                'message': 'Preferences updated successfully',
+                'preferences': {
+                    'dark_mode': pref.dark_mode,
+                    'email_notifications': pref.email_notifications
+                }
+            })
+
+        # GET request
         if not pref:
             pref = UserPreference(user_id=current_user.id)
             db.session.add(pref)
-        
-        if 'dark_mode' in data:
-            pref.dark_mode = data['dark_mode']
-        if 'email_notifications' in data:
-            pref.email_notifications = data['email_notifications']
-            
-        db.session.commit()
-        return jsonify({'message': 'Preferences updated successfully!'})
-    
-    pref = UserPreference.query.filter_by(user_id=current_user.id).first()
-    if not pref:
-        pref = UserPreference(user_id=current_user.id)
-        db.session.add(pref)
-        db.session.commit()
-    
-    return jsonify({
-        'dark_mode': pref.dark_mode,
-        'email_notifications': pref.email_notifications
-    })
+            db.session.commit()
 
+        return jsonify({
+            'dark_mode': pref.dark_mode,
+            'email_notifications': pref.email_notifications
+        })
+
+    except SQLAlchemyError as e:
+        return handle_db_error(e, 'preferences operation')
+
+# Reminders Routes
+@app.route('/reminders')
+@login_required
+def reminders():
+    try:
+        user_habits = Habit.query.filter_by(user_id=current_user.id).all()
+        user_reminders = Reminder.query.filter_by(user_id=current_user.id).all()
+        return render_template('reminders.html', 
+                             habits=user_habits,
+                             reminders=user_reminders,
+                             now=datetime.now())
+    except SQLAlchemyError as e:
+        logger.error(f"Error loading reminders page: {e}")
+        flash("Unable to load reminders. Please try again.", "error")
+        return redirect(url_for('dashboard'))
+
+@app.route('/api/reminders', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@login_required
+def api_reminders():
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+
+            # Validate required fields
+            required_fields = ['habit_id', 'time', 'days']
+            if not all(field in data for field in required_fields):
+                return jsonify({'error': 'Missing required fields'}), 400
+
+            # Validate habit belongs to user
+            habit = Habit.query.filter_by(id=data['habit_id'], user_id=current_user.id).first()
+            if not habit:
+                return jsonify({'error': 'Invalid habit ID'}), 404
+
+            reminder = Reminder(
+                user_id=current_user.id,
+                habit_id=data['habit_id'],
+                time=datetime.strptime(data['time'], '%H:%M').time(),
+                days=','.join(data['days']),
+                enabled=data.get('enabled', True)
+            )
+            db.session.add(reminder)
+            db.session.commit()
+
+            return jsonify({
+                'message': 'Reminder created successfully',
+                'reminder': {
+                    'id': reminder.id,
+                    'habit_id': reminder.habit_id,
+                    'time': reminder.time.strftime('%H:%M'),
+                    'days': reminder.days.split(','),
+                    'enabled': reminder.enabled
+                }
+            })
+
+        elif request.method == 'PUT':
+            data = request.get_json()
+            reminder_id = data.get('id')
+            if not reminder_id:
+                return jsonify({'error': 'Reminder ID required'}), 400
+
+            reminder = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
+            if not reminder:
+                return jsonify({'error': 'Reminder not found'}), 404
+
+            if 'enabled' in data:
+                reminder.enabled = data['enabled']
+            if 'time' in data:
+                reminder.time = datetime.strptime(data['time'], '%H:%M').time()
+            if 'days' in data:
+                reminder.days = ','.join(data['days'])
+
+            db.session.commit()
+            return jsonify({'message': 'Reminder updated successfully'})
+
+        elif request.method == 'DELETE':
+            reminder_id = request.args.get('id')
+            if not reminder_id:
+                return jsonify({'error': 'Reminder ID required'}), 400
+
+            reminder = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
+            if not reminder:
+                return jsonify({'error': 'Reminder not found'}), 404
+
+            db.session.delete(reminder)
+            db.session.commit()
+            return jsonify({'message': 'Reminder deleted successfully'})
+
+        # GET request
+        reminders = Reminder.query.filter_by(user_id=current_user.id).all()
+        return jsonify([{
+            'id': r.id,
+            'habit_id': r.habit_id,
+            'habit_name': Habit.query.get(r.habit_id).habit_name,
+            'time': r.time.strftime('%H:%M'),
+            'days': r.days.split(','),
+            'enabled': r.enabled
+        } for r in reminders])
+
+    except SQLAlchemyError as e:
+        return handle_db_error(e, 'reminders operation')
+
+# Challenges Routes
+@app.route('/challenges')
+@login_required
+def challenges():
+    try:
+        user_habits = Habit.query.filter_by(user_id=current_user.id).all()
+        user_challenges = Challenge.query.filter(
+            (Challenge.creator_id == current_user.id) |
+            (Challenge.participants.any(id=current_user.id))
+        ).all()
+        
+        return render_template('challenges.html',
+                             habits=user_habits,
+                             challenges=user_challenges,
+                             now=datetime.now())
+    except SQLAlchemyError as e:
+        logger.error(f"Error loading challenges page: {e}")
+        flash("Unable to load challenges. Please try again.", "error")
+        return redirect(url_for('dashboard'))
+
+@app.route('/api/challenges', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@login_required
+def api_challenges():
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+
+            # Validate required fields
+            required_fields = ['habit_id', 'name', 'start_date', 'end_date']
+            if not all(field in data for field in required_fields):
+                return jsonify({'error': 'Missing required fields'}), 400
+
+            # Validate dates
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            if end_date < start_date:
+                return jsonify({'error': 'End date must be after start date'}), 400
+
+            challenge = Challenge(
+                creator_id=current_user.id,
+                habit_id=data['habit_id'],
+                name=data['name'],
+                description=data.get('description', ''),
+                start_date=start_date,
+                end_date=end_date
+            )
+            db.session.add(challenge)
+            
+            # Add creator as first participant
+            participant = ChallengeParticipant(
+                challenge_id=challenge.id,
+                user_id=current_user.id
+            )
+            db.session.add(participant)
+            db.session.commit()
+
+            return jsonify({
+                'message': 'Challenge created successfully',
+                'challenge': {
+                    'id': challenge.id,
+                    'name': challenge.name,
+                    'description': challenge.description,
+                    'start_date': challenge.start_date.strftime('%Y-%m-%d'),
+                    'end_date': challenge.end_date.strftime('%Y-%m-%d')
+                }
+            })
+
+        # GET request
+        challenges = Challenge.query.filter(
+            (Challenge.creator_id == current_user.id) |
+            (Challenge.participants.any(id=current_user.id))
+        ).all()
+
+        return jsonify([{
+            'id': c.id,
+            'name': c.name,
+            'description': c.description,
+            'start_date': c.start_date.strftime('%Y-%m-%d'),
+            'end_date': c.end_date.strftime('%Y-%m-%d'),
+            'participant_count': len(c.participants),
+            'isCreator': c.creator_id == current_user.id,
+            'isParticipating': current_user in c.participants
+        } for c in challenges])
+
+    except SQLAlchemyError as e:
+        return handle_db_error(e, 'challenges operation')
+
+# Additional challenge-related endpoints
+@app.route('/api/challenges/<int:challenge_id>/join', methods=['POST'])
+@login_required
+def join_challenge(challenge_id):
+    try:
+        challenge = Challenge.query.get_or_404(challenge_id)
+        if current_user in challenge.participants:
+            return jsonify({'message': 'Already participating in this challenge'}), 400
+
+        participant = ChallengeParticipant(
+            challenge_id=challenge_id,
+            user_id=current_user.id
+        )
+        db.session.add(participant)
+        db.session.commit()
+
+        return jsonify({'message': 'Successfully joined the challenge'})
+    except SQLAlchemyError as e:
+        return handle_db_error(e, 'joining challenge')
+
+@app.route('/api/challenges/<int:challenge_id>/leave', methods=['POST'])
+@login_required
+def leave_challenge(challenge_id):
+    try:
+        participant = ChallengeParticipant.query.filter_by(
+            challenge_id=challenge_id,
+            user_id=current_user.id
+        ).first_or_404()
+
+        db.session.delete(participant)
+        db.session.commit()
+
+        return jsonify({'message': 'Successfully left the challenge'})
+    except SQLAlchemyError as e:
+        return handle_db_error(e, 'leaving challenge')
 if __name__ == '__main__':
     app.run(debug=True)
