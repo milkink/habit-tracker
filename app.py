@@ -704,24 +704,40 @@ def check_achievements(user_id, habit_id):
         app.logger.error(f"Error checking achievements: {e}")
         return []
 
-# Update these routes in your app.py
-
 @app.route('/reminders')
 @login_required
 def reminders():
-    habits = Habit.query.filter_by(user_id=current_user.id).all()
-    return render_template('reminders.html', habits=habits)
+    try:
+        habits = Habit.query.filter_by(user_id=current_user.id).all()
+        now = datetime.now()  
+        return render_template('reminders.html', habits=habits, now=now)
+    except Exception as e:
+        app.logger.error(f"Error loading reminders: {e}")
+        flash("An error occurred while loading reminders.")
+        return redirect(url_for('dashboard'))
 
 @app.route('/challenges')
 @login_required
 def challenges():
-    habits = Habit.query.filter_by(user_id=current_user.id).all()
-    return render_template('challenges.html', habits=habits)
+    try:
+        habits = Habit.query.filter_by(user_id=current_user.id).all()
+        now = datetime.now()  
+        return render_template('challenges.html', habits=habits, now=now)
+    except Exception as e:
+        app.logger.error(f"Error loading challenges: {e}")
+        flash("An error occurred while loading challenges.")
+        return redirect(url_for('dashboard'))
 
 @app.route('/preferences')
 @login_required
 def preferences():
-    return render_template('preferences.html')
+    try:
+        now = datetime.now()  
+        return render_template('preferences.html', now=now)
+    except Exception as e:
+        app.logger.error(f"Error loading preferences: {e}")
+        flash("An error occurred while loading preferences.")
+        return redirect(url_for('dashboard'))
 
 @app.route('/api/reminders', methods=['GET', 'POST'])
 @login_required
