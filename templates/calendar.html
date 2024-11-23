@@ -4,86 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Habit Tracker - Calendar</title>
-
-    <!-- Link to FullCalendar CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.2.0/fullcalendar.min.css">
-
-    <!-- Link to your custom styles.css -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='/styles.css') }}">
-
-    <!-- jQuery and Moment.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.2.0/fullcalendar.min.js"></script>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.css" rel="stylesheet">
     <style>
-        #calendar {
-            width: 100%;
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            height: 700px;
-        }
-
-        .fc-toolbar {
-            background-color: #f5f5f5;
-            padding: 10px;
-        }
-
-        .fc-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-        }
-
-        .fc-button:hover {
-            background-color: #45a049;
-        }
-
-        .fc-title {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .fc-event {
-            border: none;
-            cursor: pointer;
-        }
-
-        .fc-event.fc-event-success {
-            background-color: green;
-            color: white;
-        }
-
-        .fc-event.fc-event-danger {
-            background-color: red;
-            color: white;
-        }
-
-        .fc-header-toolbar {
-            background-color: #e3e3e3;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .fc-day-grid .fc-day {
-            min-height: 60px;
-            cursor: pointer;
-        }
-
-        #habit-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            padding: 20px;
             background-color: white;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
+        #calendar {
+            margin-top: 20px;
+        }
+        .fc-header-toolbar {
+            margin-bottom: 1.5em;
+        }
+        .fc-daygrid-day-number {
+            font-weight: bold;
+            color: #333;
+        }
+        .fc-event {
+            cursor: pointer;
+            border: none;
+            padding: 2px 4px;
+        }
+        .fc-event-title {
+            font-weight: 500;
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -91,66 +45,68 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
         }
-
+        #habit-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            min-width: 300px;
+        }
         #habit-list {
             list-style: none;
             padding: 0;
             margin: 15px 0;
         }
-
         #habit-list li {
             padding: 10px;
             margin-bottom: 8px;
+            background: #f8f9fa;
             border-radius: 4px;
-            background-color: #f5f5f5;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
         .habit-status {
             padding: 4px 8px;
             border-radius: 4px;
             font-weight: bold;
         }
-
         .status-completed {
-            background-color: #4CAF50;
+            background: #28a745;
             color: white;
         }
-
         .status-not-completed {
-            background-color: #f44336;
+            background: #dc3545;
             color: white;
         }
-
         .close-button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
+            background: #007bff;
             color: white;
             border: none;
+            padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
             float: right;
         }
-
         .close-button:hover {
-            background-color: #45a049;
-        }
-
-        #modal-date {
-            font-weight: bold;
-            color: #333;
+            background: #0056b3;
         }
     </style>
 </head>
 <body>
-    <h1>Habit Tracker Calendar</h1>
-
-    <div id="calendar"></div>
+    <div class="container">
+        <h1>Habit Tracker Calendar</h1>
+        <div id="calendar"></div>
+    </div>
 
     <div class="modal-overlay" id="modal-overlay"></div>
     <div id="habit-modal">
@@ -159,11 +115,13 @@
         <button class="close-button" onclick="closeModal()">Close</button>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.2.0/fullcalendar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.js"></script>
     <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCalendar();
+        });
+    </script>
 </body>
 </html>
