@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fetchChallenges = async () => {
     try {
-      const response = await fetch('/api/challenges');
+      const response = await fetch('/challenges');
       const challenges = await response.json();
       
       challengesContainer.innerHTML = challenges.map(challenge => `
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/api/challenges', {
+      const response = await fetch('/challenges', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
