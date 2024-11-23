@@ -1,11 +1,10 @@
-// Handles habit reminders functionality
 document.addEventListener('DOMContentLoaded', () => {
   const reminderForm = document.getElementById('reminder-form');
   const remindersContainer = document.querySelector('.reminders-container');
 
   const fetchReminders = async () => {
     try {
-      const response = await fetch('/reminders');
+      const response = await fetch('/api/reminders');
       const reminders = await response.json();
       
       remindersContainer.innerHTML = reminders.map(reminder => `
@@ -40,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/reminders', {
+      const response = await fetch('/api/reminders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -51,9 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         await fetchReminders();
         reminderForm.reset();
+        toastr.success('Reminder set successfully!');
       }
     } catch (error) {
       console.error('Error creating reminder:', error);
+      toastr.error('Error setting reminder.');
     }
   });
 
@@ -66,8 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         body: JSON.stringify({ enabled })
       });
+      toastr.success('Reminder updated successfully!');
     } catch (error) {
       console.error('Error toggling reminder:', error);
+      toastr.error('Error updating reminder.');
     }
   };
 
