@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/new-features.css') }}">
     
     <!-- JavaScript Dependencies -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -21,9 +22,12 @@
     <script src="{{ url_for('static', filename='js/achievements.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notes.js') }}"></script>
     <script src="{{ url_for('static', filename='js/suggestions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reminders.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/challenges.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/preferences.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <style>
-        /* Keep existing styles */
+        
         body {
             background-color: #f8f9fa;
             font-family: Arial, sans-serif;
@@ -130,6 +134,43 @@
             gap: 10px;
             align-items: center;
         }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-action-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .quick-action-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .active-challenges {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .reminder-badge {
+            background-color: #17a2b8;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +178,26 @@
     <div class="welcome-header">
         <h2>Welcome, {{ current_user.username }}!</h2>
         <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="container">
+        <div class="quick-actions">
+            <button class="quick-action-btn" onclick="window.location.href='{{ url_for('reminders') }}'">
+                <i class="fas fa-bell"></i> Manage Reminders
+            </button>
+            <button class="quick-action-btn" onclick="window.location.href='{{ url_for('challenges') }}'">
+                <i class="fas fa-trophy"></i> View Challenges
+            </button>
+        </div>
+    </div>
+    
+    <!-- Active Challenges Section -->
+    <div class="container active-challenges">
+        <h4><i class="fas fa-trophy"></i> Active Challenges</h4>
+        <div id="active-challenges-container">
+            <!-- Active challenges will be loaded here -->
+        </div>
     </div>
 
     <!-- Notifications Area -->
@@ -176,8 +237,16 @@
                                {% if habit.last_completed and habit.last_completed == now.date() %} checked {% endif %}>
                         {{ habit.habit_name }} ({{ habit.frequency }}) - 
                         Streak: <span id="habit-streak-{{ habit.id }}">{{ habit.streak }}</span>
+                        {% if habit.has_reminder %}
+                            <span class="reminder-badge">
+                                <i class="fas fa-bell"></i> Reminder Set
+                            </span>
+                        {% endif %}
                     </label>
                     <div class="habit-actions">
+                        <button class="btn btn-sm btn-info" onclick="setReminder({{ habit.id }})">
+                            <i class="fas fa-bell"></i>
+                        </button>
                         <button class="add-note-btn" onclick="openNoteModal({{ habit.id }})">
                             <i class="fas fa-sticky-note"></i> Notes
                         </button>
@@ -209,18 +278,21 @@
     <!-- Links Section -->
     <div class="container mt-4">
         <div class="row">
-            <div class="col-md-4 text-center">
+            <div class="col-md-3 text-center">
                 <h5><a href="{{ url_for('calendar') }}" class="calendar-link">View Habit Calendar</a></h5>
             </div>
-            <div class="col-md-4 text-center">
+            <div class="col-md-3 text-center">
                 <h5><a href="{{ url_for('analytics') }}" class="analytics-link">View Habit Analytics</a></h5>
             </div>
-            <div class="col-md-4 text-center">
+            <div class="col-md-3 text-center">
                 <h5><a href="{{ url_for('leaderboard') }}" class="leaderboard-link">View Leaderboard</a></h5>
+            </div>
+            <div class="col-md-3 text-center">
+                <h5><a href="{{ url_for('challenges') }}" class="challenges-link">Join Challenges</a></h5>
             </div>
         </div>
     </div>
-
+    
     <!-- Note Modal -->
     <div class="modal fade" id="habitNoteModal" tabindex="-1">
         <div class="modal-dialog">
@@ -238,6 +310,39 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="saveNote">Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Reminder Modal -->
+    <div class="modal fade" id="reminderModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Set Reminder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="reminderTime" class="form-label">Time</label>
+                        <input type="time" class="form-control" id="reminderTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Days</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="reminderDays" value="{{ day }}">
+                                <label class="form-check-label">{{ day }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveReminder">Save Reminder</button>
                 </div>
             </div>
         </div>
