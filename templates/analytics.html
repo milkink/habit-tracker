@@ -86,83 +86,15 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Pass data from Flask to JavaScript
         const chartData = {{ chart_data | tojson | safe }};
         const streakData = {{ streak_chart_data | tojson | safe }};
-
-        function createChart(ctx, data, options) {
-            return new Chart(ctx, {
-                type: 'line',
-                data: data,
-                options: {
-                    ...options,
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-        }
-
-        // Create charts for each frequency type
-        ['daily', 'weekly', 'monthly'].forEach(frequency => {
-            // Completion charts
-            const completionCtx = document.getElementById(`${frequency}CompletionChart`).getContext('2d');
-            createChart(completionCtx, chartData[frequency], {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Completion`
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Completed (1) / Not Completed (0)'
-                        },
-                        min: 0,
-                        max: 1,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            });
-
-            // Streak charts
-            const streakCtx = document.getElementById(`${frequency}StreakChart`).getContext('2d');
-            createChart(streakCtx, streakData[frequency], {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Streaks`
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Streak Length'
-                        },
-                        min: 0,
-                        beginAtZero: true
-                    }
-                }
-            });
-        });
     </script>
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
 </body>
 </html>
