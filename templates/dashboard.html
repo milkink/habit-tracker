@@ -178,7 +178,13 @@
         <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
     </div>
 
-    
+    <div class="absolute top-4 right-4 flex items-center gap-2">
+      <span class="text-sm">Dark Mode</span>
+      <div class="dark-mode-toggle">
+        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+        <label for="darkModeToggle"></label>
+      </div>
+    </div>
     
     
 
