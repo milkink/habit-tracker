@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Habit Tracker - Calendar</title>
+    
+    <!-- Required FullCalendar Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.10/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.10/index.global.min.js"></script>
+    
+    <!-- Required FullCalendar Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
     <style>
         body {
             background-color: #f8f9fa;
@@ -23,26 +28,30 @@
         }
         #calendar {
             margin-top: 20px;
-            height: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            height: auto;
+            min-height: 700px;
         }
-        .fc {
+        .fc { /* the calendar root */
             max-width: 1140px;
             margin: 0 auto;
         }
-        .fc-header-toolbar {
-            margin-bottom: 1.5em !important;
+        .fc-toolbar-title {
+            font-size: 1.5em !important;
+            font-weight: bold !important;
         }
-        .fc-daygrid-day-number {
-            font-weight: bold;
-            color: #333;
+        .fc-button-primary {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
         }
-        .fc-event {
-            cursor: pointer;
-            border: none !important;
-            padding: 2px 4px;
+        .fc-button-primary:hover {
+            background-color: #0056b3 !important;
+            border-color: #0056b3 !important;
         }
-        .fc-event-title {
-            font-weight: 500;
+        .fc-daygrid-day {
+            min-height: 100px !important;
         }
         .modal-overlay {
             display: none;
@@ -106,11 +115,16 @@
         .close-button:hover {
             background: #0056b3;
         }
+        .fc-event {
+            cursor: pointer;
+            padding: 2px 4px;
+            margin: 2px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Habit Tracker Calendar</h1>
+        <h1 class="mb-4">Habit Tracker Calendar</h1>
         <div id="calendar"></div>
     </div>
 
