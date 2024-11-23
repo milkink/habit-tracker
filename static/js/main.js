@@ -31,4 +31,23 @@ $(document).ready(function() {
 
     // Modal overlay click handler
     $('#modal-overlay').on('click', closeModal);
+
+    // Initialize dark mode
+    initDarkMode();
 });
+
+// Dark mode functions
+function initDarkMode() {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    
+    const toggle = document.getElementById('darkModeToggle');
+    if (toggle) {
+        toggle.checked = isDarkMode;
+    }
+}
+
+function toggleDarkMode() {
+    const isDarkMode = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('darkMode', isDarkMode);
+}
