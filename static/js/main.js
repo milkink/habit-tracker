@@ -36,24 +36,24 @@ $(document).ready(function() {
     initializeDarkMode();
 });
 
-// Dark mode functionality
+// Dark mode functionality using DarkReader
 function initializeDarkMode() {
-    // Check for saved dark mode preference
-    const darkMode = localStorage.getItem('darkMode') === 'true';
+    // Check saved preference
+    const isDark = localStorage.getItem('darkMode') === 'true';
     
-    // Apply dark mode if saved preference exists
-    if (darkMode) {
-        $('body').addClass('dark-mode');
+    // Set initial state
+    if (isDark) {
+        DarkReader.enable();
         $('#darkModeToggle').prop('checked', true);
     }
 
-    // Handle dark mode toggle
+    // Handle toggle
     $('#darkModeToggle').on('change', function() {
         if ($(this).is(':checked')) {
-            $('body').addClass('dark-mode');
+            DarkReader.enable();
             localStorage.setItem('darkMode', 'true');
         } else {
-            $('body').removeClass('dark-mode');
+            DarkReader.disable();
             localStorage.setItem('darkMode', 'false');
         }
     });
