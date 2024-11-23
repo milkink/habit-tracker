@@ -1,0 +1,45 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">User Preferences</h2>
+  
+  <div class="row">
+    <div class="col-md-6">
+      <div class="form-section">
+        <h4>Display Settings</h4>
+        <div class="mb-3 form-check form-switch">
+          <input type="checkbox" class="form-check-input" id="dark-mode-toggle">
+          <label class="form-check-label" for="dark-mode-toggle">Dark Mode</label>
+        </div>
+        
+        <div class="mb-3 form-check form-switch">
+          <input type="checkbox" class="form-check-input" id="email-notifications-toggle">
+          <label class="form-check-label" for="email-notifications-toggle">Email Notifications</label>
+        </div>
+      </div>
+      
+      <div class="form-section mt-4">
+        <h4>Export Data</h4>
+        <div class="mb-3">
+          <label for="export-start-date" class="form-label">Start Date</label>
+          <input type="date" class="form-control" id="export-start-date">
+        </div>
+        
+        <div class="mb-3">
+          <label for="export-end-date" class="form-label">End Date</label>
+          <input type="date" class="form-control" id="export-end-date">
+        </div>
+        
+        <button id="export-stats" class="btn btn-primary">
+          Export Habit Statistics
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/preferences.js') }}"></script>
+{% endblock %}
