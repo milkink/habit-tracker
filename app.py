@@ -408,6 +408,41 @@ def update_habit_completion(habit_id):
         db.session.rollback()
         app.logger.error(f"Error updating habit completion: {e}")
         return jsonify({'message': 'An error occurred while updating habit completion'}), 500
+
+@app.route('/habits_on_date/<date>')
+@login_required
+def habits_on_date(date):
+    try:
+        # Convert string date to datetime object
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        # Query all habits and their completion status for the given date
+        habits_query = db.session.query(
+            Habit,
+            HabitCompletion
+        ).outerjoin(
+            HabitCompletion,
+            db.and_(
+                HabitCompletion.habit_id == Habit.id,
+                HabitCompletion.completion_date == date_obj
+            )
+        ).filter(
+            Habit.user_id == current_user.id
+        ).all()
+
+        habits_data = []
+        for habit, completion in habits_query:
+            habits_data.append({
+                'habit_id': habit.id,
+                'habit_name': habit.habit_name,
+                'is_completed': completion.is_completed if completion else False
+            })
+
+        return jsonify(habits_data)
+
+    except Exception as e:
+        app.logger.error(f"Error fetching habits for date {date}: {e}")
+        return jsonify({'error': 'Failed to fetch habits'}), 500
         
 # Calendar route (needed for the link in dashboard.html)
 @app.route('/calendar')
