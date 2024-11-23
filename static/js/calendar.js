@@ -5,12 +5,14 @@ function initializeCalendar() {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
+        height: 'auto',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: function(info, successCallback, failureCallback) {
+        plugins: [FullCalendar.dayGridPlugin, FullCalendar.timeGridPlugin],
+        events: function(fetchInfo, successCallback, failureCallback) {
             fetch('/get_habits')
                 .then(response => response.json())
                 .then(data => {
@@ -29,11 +31,16 @@ function initializeCalendar() {
                     failureCallback(error);
                 });
         },
+        eventDidMount: function(info) {
+            info.el.style.cursor = 'pointer';
+        },
         dateClick: function(info) {
             fetchHabitsForDate(info.dateStr);
         },
         eventClick: function(info) {
-            fetchHabitsForDate(info.event.start.toISOString().split('T')[0]);
+            const date = info.event.start;
+            const dateStr = date.toISOString().split('T')[0];
+            fetchHabitsForDate(dateStr);
         }
     });
 
