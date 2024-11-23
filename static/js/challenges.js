@@ -1,11 +1,10 @@
-// Handles habit challenges functionality
 document.addEventListener('DOMContentLoaded', () => {
   const challengeForm = document.getElementById('challenge-form');
   const challengesContainer = document.querySelector('.challenges-container');
 
   const fetchChallenges = async () => {
     try {
-      const response = await fetch('/challenges');
+      const response = await fetch('/api/challenges');
       const challenges = await response.json();
       
       challengesContainer.innerHTML = challenges.map(challenge => `
@@ -24,8 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ` : ''}
           <div class="progress mt-3">
             <div class="progress-bar" role="progressbar" 
-                 style="width: ${challenge.completion_rate}%">
-              ${challenge.completion_rate}%
+                 style="width: ${challenge.completion_rate || 0}%">
+              ${challenge.completion_rate || 0}%
             </div>
           </div>
         </div>
@@ -47,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/challenges', {
+      const response = await fetch('/api/challenges', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -58,9 +57,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         await fetchChallenges();
         challengeForm.reset();
+        toastr.success('Challenge created successfully!');
       }
     } catch (error) {
       console.error('Error creating challenge:', error);
+      toastr.error('Error creating challenge.');
     }
   });
 
@@ -71,9 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (response.ok) {
         await fetchChallenges();
+        toastr.success('Joined challenge successfully!');
       }
     } catch (error) {
       console.error('Error joining challenge:', error);
+      toastr.error('Error joining challenge.');
     }
   };
 
