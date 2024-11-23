@@ -1,0 +1,52 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Habit Reminders</h2>
+  
+  <div class="row">
+    <div class="col-md-4">
+      <div class="form-section">
+        <h4>Set New Reminder</h4>
+        <form id="reminder-form" class="custom-form">
+          <div class="mb-3">
+            <label for="habit_id" class="form-label">Select Habit</label>
+            <select class="form-select" name="habit_id" required>
+              {% for habit in habits %}
+              <option value="{{ habit.id }}">{{ habit.habit_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label for="time" class="form-label">Reminder Time</label>
+            <input type="time" class="form-control" name="time" required>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Days</label>
+            <div class="d-flex flex-wrap gap-2">
+              {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="days" value="{{ day }}">
+                <label class="form-check-label">{{ day }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Set Reminder</button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="col-md-8">
+      <div class="reminders-container"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reminders.js') }}"></script>
+{% endblock %}
