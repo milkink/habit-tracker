@@ -704,9 +704,28 @@ def check_achievements(user_id, habit_id):
         app.logger.error(f"Error checking achievements: {e}")
         return []
 
-@app.route('/reminders', methods=['GET', 'POST'])
+# Update these routes in your app.py
+
+@app.route('/reminders')
 @login_required
 def reminders():
+    habits = Habit.query.filter_by(user_id=current_user.id).all()
+    return render_template('reminders.html', habits=habits)
+
+@app.route('/challenges')
+@login_required
+def challenges():
+    habits = Habit.query.filter_by(user_id=current_user.id).all()
+    return render_template('challenges.html', habits=habits)
+
+@app.route('/preferences')
+@login_required
+def preferences():
+    return render_template('preferences.html')
+
+@app.route('/api/reminders', methods=['GET', 'POST'])
+@login_required
+def api_reminders():
     if request.method == 'POST':
         data = request.json
         reminder = Reminder(
@@ -724,14 +743,15 @@ def reminders():
     return jsonify([{
         'id': r.id,
         'habit_id': r.habit_id,
+        'habit_name': Habit.query.get(r.habit_id).habit_name,
         'time': r.time.strftime('%H:%M'),
         'days': r.days.split(','),
         'enabled': r.enabled
     } for r in reminders])
 
-@app.route('/challenges', methods=['GET', 'POST'])
+@app.route('/api/challenges', methods=['GET', 'POST'])
 @login_required
-def challenges():
+def api_challenges():
     if request.method == 'POST':
         data = request.json
         challenge = Challenge(
@@ -759,58 +779,13 @@ def challenges():
         'description': c.description,
         'start_date': c.start_date.strftime('%Y-%m-%d'),
         'end_date': c.end_date.strftime('%Y-%m-%d'),
-        'participant_count': len(c.participants)
+        'participant_count': len(c.participants),
+        'isParticipating': current_user in c.participants
     } for c in all_challenges])
 
-@app.route('/join_challenge/<int:challenge_id>', methods=['POST'])
+@app.route('/api/preferences', methods=['GET', 'PUT'])
 @login_required
-def join_challenge(challenge_id):
-    challenge = Challenge.query.get_or_404(challenge_id)
-    if current_user not in challenge.participants:
-        participant = ChallengeParticipant(challenge_id=challenge_id, user_id=current_user.id)
-        db.session.add(participant)
-        db.session.commit()
-        return jsonify({'message': 'Joined challenge successfully!'})
-    return jsonify({'message': 'Already participating in this challenge'}), 400
-
-@app.route('/export_stats', methods=['GET'])
-@login_required
-def export_stats():
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    # Query habit completions
-    completions = HabitCompletion.query.filter(
-        HabitCompletion.user_id == current_user.id,
-        HabitCompletion.completion_date >= start_date,
-        HabitCompletion.completion_date <= end_date
-    ).all()
-    
-    # Create CSV
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['Habit', 'Date', 'Completed'])
-    
-    for completion in completions:
-        habit = Habit.query.get(completion.habit_id)
-        cw.writerow([
-            habit.habit_name,
-            completion.completion_date.strftime('%Y-%m-%d'),
-            'Yes' if completion.is_completed else 'No'
-        ])
-    
-    output = si.getvalue()
-    si.close()
-    
-    return Response(
-        output,
-        mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=habit_stats.csv'}
-    )
-
-@app.route('/preferences', methods=['GET', 'PUT'])
-@login_required
-def preferences():
+def api_preferences():
     if request.method == 'PUT':
         data = request.json
         pref = UserPreference.query.filter_by(user_id=current_user.id).first()
@@ -818,8 +793,11 @@ def preferences():
             pref = UserPreference(user_id=current_user.id)
             db.session.add(pref)
         
-        pref.dark_mode = data.get('dark_mode', pref.dark_mode)
-        pref.email_notifications = data.get('email_notifications', pref.email_notifications)
+        if 'dark_mode' in data:
+            pref.dark_mode = data['dark_mode']
+        if 'email_notifications' in data:
+            pref.email_notifications = data['email_notifications']
+            
         db.session.commit()
         return jsonify({'message': 'Preferences updated successfully!'})
     
@@ -833,20 +811,6 @@ def preferences():
         'dark_mode': pref.dark_mode,
         'email_notifications': pref.email_notifications
     })
-
-# Add this function to handle reminder emails
-def send_reminder_email(user_id, habit_id):
-    user = User.query.get(user_id)
-    habit = Habit.query.get(habit_id)
-    
-    msg = Message(
-        'Habit Reminder',
-        sender=app.config['MAIL_USERNAME'],
-        recipients=[user.email]
-    )
-    msg.body = f"Don't forget to complete your habit: {habit.habit_name}"
-    mail.send(msg)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
