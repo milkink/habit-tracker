@@ -17,7 +17,7 @@ class UserPreferences {
 
   async loadPreferences() {
     try {
-      const response = await fetch('/preferences');
+      const response = await fetch('/api/preferences');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -43,11 +43,10 @@ class UserPreferences {
 
   async updatePreferences(updates) {
     try {
-      const response = await fetch('/preferences', {
+      const response = await fetch('/api/preferences', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': this.getCsrfToken() // Add CSRF protection
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(updates)
       });
@@ -126,11 +125,6 @@ class UserPreferences {
     }
 
     return true;
-  }
-
-  getCsrfToken() {
-    // Get CSRF token from meta tag
-    return document.querySelector('meta[name="csrf-token"]')?.content;
   }
 }
 
