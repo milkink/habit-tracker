@@ -1,67 +1,44 @@
-// Analytics Chart Creation
 function createChart(ctx, data, options) {
-    if (!data || !data.labels || !data.values) {
-        console.error('Invalid data format:', data);
-        return null;
-    }
-
-    const chartConfig = {
+    return new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: data.label || '',
-                data: data.values,
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                tension: 0.1,
-                fill: true
-            }]
-        },
+        data: data,
         options: {
             ...options,
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                }
-            }
         }
-    };
-
-    try {
-        return new Chart(ctx, chartConfig);
-    } catch (error) {
-        console.error('Error creating chart:', error);
-        return null;
-    }
+    });
 }
 
 // Initialize Analytics Charts
 function initializeAnalytics(chartData, streakData) {
-    console.log('Chart Data:', chartData);
-    console.log('Streak Data:', streakData);
-
-    if (!chartData || !streakData) {
-        console.error('Missing data for charts');
-        return;
-    }
-
     ['daily', 'weekly', 'monthly'].forEach(frequency => {
         // Completion charts
         const completionCtx = document.getElementById(`${frequency}CompletionChart`);
-        if (completionCtx && chartData[frequency]) {
-            console.log(`Creating ${frequency} completion chart`);
-            createChart(completionCtx, chartData[frequency], {
+        if (completionCtx) {
+            createChart(completionCtx.getContext('2d'), chartData[frequency], {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Completion`
+                    }
+                },
                 scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
                     y: {
-                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Completed (1) / Not Completed (0)'
+                        },
+                        min: 0,
                         max: 1,
                         ticks: {
-                            stepSize: 1,
-                            callback: value => value === 1 ? 'Completed' : 'Not Completed'
+                            stepSize: 1
                         }
                     }
                 }
@@ -70,31 +47,31 @@ function initializeAnalytics(chartData, streakData) {
 
         // Streak charts
         const streakCtx = document.getElementById(`${frequency}StreakChart`);
-        if (streakCtx && streakData[frequency]) {
-            console.log(`Creating ${frequency} streak chart`);
-            createChart(streakCtx, streakData[frequency], {
+        if (streakCtx) {
+            createChart(streakCtx.getContext('2d'), streakData[frequency], {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Habit Streaks`
+                    }
+                },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
                         }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Streak Length'
+                        },
+                        min: 0,
+                        beginAtZero: true
                     }
                 }
             });
         }
     });
 }
-
-// Wait for DOM and data
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded');
-    // Add a small delay to ensure data is loaded
-    setTimeout(() => {
-        if (typeof chartData !== 'undefined' && typeof streakData !== 'undefined') {
-            initializeAnalytics(chartData, streakData);
-        } else {
-            console.error('Chart data or streak data is undefined');
-        }
-    }, 100);
-});
