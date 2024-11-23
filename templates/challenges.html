@@ -1,0 +1,55 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Habit Challenges</h2>
+  
+  <div class="row">
+    <div class="col-md-4">
+      <div class="form-section">
+        <h4>Create Challenge</h4>
+        <form id="challenge-form" class="custom-form">
+          <div class="mb-3">
+            <label for="habit_id" class="form-label">Select Habit</label>
+            <select class="form-select" name="habit_id" required>
+              {% for habit in habits %}
+              <option value="{{ habit.id }}">{{ habit.habit_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label for="name" class="form-label">Challenge Name</label>
+            <input type="text" class="form-control" name="name" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3"></textarea>
+          </div>
+          
+          <div class="mb-3">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="start_date" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" class="form-control" name="end_date" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Create Challenge</button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="col-md-8">
+      <div class="challenges-container"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/challenges.js') }}"></script>
+{% endblock %}
