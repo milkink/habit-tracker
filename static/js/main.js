@@ -33,21 +33,28 @@ $(document).ready(function() {
     $('#modal-overlay').on('click', closeModal);
 
     // Initialize dark mode
-    initDarkMode();
+    initializeDarkMode();
 });
 
-// Dark mode functions
-function initDarkMode() {
-    const isDarkMode = localStorage.getItem('darkMode') === 'true';
-    document.documentElement.classList.toggle('dark', isDarkMode);
+// Dark mode functionality
+function initializeDarkMode() {
+    // Check for saved dark mode preference
+    const darkMode = localStorage.getItem('darkMode') === 'true';
     
-    const toggle = document.getElementById('darkModeToggle');
-    if (toggle) {
-        toggle.checked = isDarkMode;
+    // Apply dark mode if saved preference exists
+    if (darkMode) {
+        $('body').addClass('dark-mode');
+        $('#darkModeToggle').prop('checked', true);
     }
-}
 
-function toggleDarkMode() {
-    const isDarkMode = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('darkMode', isDarkMode);
+    // Handle dark mode toggle
+    $('#darkModeToggle').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('body').addClass('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            $('body').removeClass('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        }
+    });
 }
