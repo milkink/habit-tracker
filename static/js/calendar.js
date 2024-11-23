@@ -5,32 +5,13 @@ function initializeCalendar() {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        height: 'auto',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            right: 'dayGridMonth'
         },
-        plugins: [FullCalendar.dayGridPlugin, FullCalendar.timeGridPlugin],
-        events: function(fetchInfo, successCallback, failureCallback) {
-            fetch('/get_habits')
-                .then(response => response.json())
-                .then(data => {
-                    const events = data.map(habit => ({
-                        title: habit.habit_name,
-                        start: habit.completion_date,
-                        backgroundColor: habit.is_completed ? '#4CAF50' : '#f44336',
-                        textColor: 'white',
-                        description: habit.habit_name,
-                        allDay: true
-                    }));
-                    successCallback(events);
-                })
-                .catch(error => {
-                    console.error('Error fetching events:', error);
-                    failureCallback(error);
-                });
-        },
+        height: 'auto',
+        events: '/get_habits',
         eventDidMount: function(info) {
             info.el.style.cursor = 'pointer';
         },
@@ -38,9 +19,17 @@ function initializeCalendar() {
             fetchHabitsForDate(info.dateStr);
         },
         eventClick: function(info) {
-            const date = info.event.start;
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = info.event.start.toISOString().split('T')[0];
             fetchHabitsForDate(dateStr);
+        },
+        eventContent: function(arg) {
+            return {
+                html: `<div class="fc-event-main-frame">
+                    <div class="fc-event-title-container">
+                        <div class="fc-event-title fc-sticky">${arg.event.title}</div>
+                    </div>
+                </div>`
+            };
         }
     });
 
