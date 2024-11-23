@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const loadPreferences = async () => {
     try {
-      const response = await fetch('/api/preferences');
+      const response = await fetch('/preferences');
       const preferences = await response.json();
       
       darkModeToggle.checked = preferences.dark_mode;
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const updatePreferences = async (preferences) => {
     try {
-      const response = await fetch('/api/preferences', {
+      const response = await fetch('/preferences', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
