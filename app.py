@@ -192,7 +192,7 @@ def analytics():
         habit_completions = HabitCompletion.query.join(Habit).filter(
             HabitCompletion.user_id == current_user.id,
             HabitCompletion.completion_date >= thirty_days_ago
-        ).all()
+        ).order_by(HabitCompletion.completion_date.desc()).all()
 
         # Process completions by frequency
         for completion in habit_completions:
@@ -220,12 +220,13 @@ def analytics():
         chart_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
         streak_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
 
-        # Generate date labels
+        # Generate date labels (reversed to show oldest to newest)
+        dates = []
+        for i in range(30):
+            current_date = datetime.now() - timedelta(days=29-i)  # Start from oldest date
+            dates.append(current_date.strftime('%Y-%m-%d'))
+
         for freq in ['daily', 'weekly', 'monthly']:
-            dates = []
-            for i in range(30):
-                current_date = datetime.now() - timedelta(days=i)
-                dates.append(current_date.strftime('%Y-%m-%d'))
             chart_data[freq]['labels'] = dates
             streak_data[freq]['labels'] = dates
 
@@ -249,31 +250,57 @@ def analytics():
                 }
 
                 current_streak = 0
-                for date in chart_data[frequency]['labels']:
+                completed_dates = set(data['dates'])
+                last_completed_month = None
+
+                for date in dates:  # Using the ordered dates array
+                    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+                    
                     # Completion data
-                    completion_dataset['data'].append(1 if date in data['dates'] else 0)
+                    completion_dataset['data'].append(1 if date in completed_dates else 0)
                     
                     # Streak calculation based on frequency
-                    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
                     if frequency == 'daily':
-                        if date in data['dates']:
+                        if date in completed_dates:
                             current_streak += 1
                         else:
                             current_streak = 0
                     elif frequency == 'weekly':
+                        # Get the start of the week for the current date
                         week_start = date_obj - timedelta(days=date_obj.weekday())
-                        week_completions = [d for d in data['dates'] if datetime.strptime(d, '%Y-%m-%d').date() >= week_start and 
-                                         datetime.strptime(d, '%Y-%m-%d').date() < week_start + timedelta(days=7)]
-                        if week_completions:
-                            current_streak += 1
+                        week_end = week_start + timedelta(days=6)
+                        
+                        # Check if there's any completion in this week
+                        week_has_completion = any(
+                            week_start <= datetime.strptime(d, '%Y-%m-%d').date() <= week_end
+                            for d in completed_dates
+                        )
+                        
+                        if week_has_completion:
+                            if date_obj.weekday() == 6:  # Only count streak on Sunday
+                                current_streak += 1
                         else:
-                            current_streak = 0
+                            if date_obj.weekday() == 6:  # Reset streak on Sunday if no completion
+                                current_streak = 0
+                            
                     elif frequency == 'monthly':
-                        month_start = date_obj.replace(day=1)
-                        month_completions = [d for d in data['dates'] if datetime.strptime(d, '%Y-%m-%d').date().month == date_obj.month]
-                        if month_completions:
-                            current_streak += 1
+                        current_month = (date_obj.year, date_obj.month)
+
+                        # Check if there's any completion in this month
+                        month_has_completion = any(
+                            (datetime.strptime(d, '%Y-%m-%d').date().year,
+                             datetime.strptime(d, '%Y-%m-%d').date().month) == current_month
+                            for d in completed_dates
+                        )
+
+                        # Track streak across months
+                        if month_has_completion:
+                            # If we're in a new month and there's a completion, continue the streak
+                            if current_month != last_completed_month:
+                                current_streak += 1
+                                last_completed_month = current_month
                         else:
+                        # Reset streak only if there are no completions this month
                             current_streak = 0
                     
                     streak_dataset['data'].append(current_streak)
@@ -290,6 +317,7 @@ def analytics():
         app.logger.error(f"Error in analytics route: {e}")
         flash("An error occurred while loading the analytics.")
         return redirect(url_for('home'))
+
 
 
 
