@@ -8,37 +8,80 @@
     <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    
     <style>
-        .habit-summary { margin-top: 20px; }
-        .habit-analytics { margin-bottom: 20px; }
+        .habit-summary { 
+            margin-top: 20px; 
+        }
+        .habit-analytics { 
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
         .chart-container {
             margin: 20px 0;
             height: 400px;
             position: relative;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         .frequency-section {
             margin-bottom: 40px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            padding: 30px;
+            border-radius: 16px;
             background-color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         body {
             background-color: #f8f9fa;
             padding: 20px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
         h1, h2, h3 {
-            color: #333;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+        h2 {
+            color: #34495e;
+            margin-bottom: 1.2rem;
+            font-size: 1.8rem;
+        }
+        h3 {
+            color: #7f8c8d;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
         }
         canvas {
-            background-color: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .habit-analytics h4 {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+        }
+        .habit-analytics p {
+            color: #7f8c8d;
+            margin-bottom: 0.5rem;
+        }
+        .habit-analytics strong {
+            color: #34495e;
         }
     </style>
 </head>
@@ -105,7 +148,6 @@
     </div>
 
     <script>
-        // Pass data from Flask to JavaScript
         const chartData = {{ chart_data | tojson | safe }};
         const streakData = {{ streak_chart_data | tojson | safe }};
     
