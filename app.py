@@ -389,24 +389,36 @@ def get_habits():
         'streak': habit.streak
     } for habit in habits])
 
-# Remove a habit
 @app.route('/remove_habit/<int:habit_id>', methods=['DELETE'])
 @login_required
 def remove_habit(habit_id):
-    # Get the habit for the current user
-    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
-    
-    if habit:
-        # Delete the habit completions for the current user
-        HabitCompletion.query.filter_by(habit_id=habit_id, user_id=current_user.id).delete()
+    try:
+        # Get the habit for the current user
+        habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first()
+        
+        if habit:
+            # Delete all notes associated with this habit
+            HabitNote.query.filter_by(habit_id=habit_id, user_id=current_user.id).delete()
+            
+            # Delete all habit completions for this habit
+            HabitCompletion.query.filter_by(habit_id=habit_id, user_id=current_user.id).delete()
+            
+            # Delete any habit-category associations
+            HabitCategory.query.filter_by(habit_id=habit_id).delete()
+            
+            # Finally, delete the habit itself
+            db.session.delete(habit)
+            db.session.commit()
 
-        # Now, delete the habit itself
-        db.session.delete(habit)
-        db.session.commit()
+            return jsonify({"message": "Habit and all associated data removed successfully!"}), 200
+        else:
+            return jsonify({"message": "Habit not found."}), 404
 
-        return jsonify({"message": "Habit removed successfully!"}), 200
-    else:
-        return jsonify({"message": "Habit not found."}), 404
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error removing habit: {e}")
+        return jsonify({"message": "An error occurred while removing the habit."}), 500
+
 
 
 @app.route('/update_habit_completion/<int:habit_id>', methods=['PUT'])
