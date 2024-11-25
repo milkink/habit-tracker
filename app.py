@@ -174,6 +174,12 @@ def dashboard():
 
 
 
+from datetime import datetime, timedelta
+from flask import render_template, flash, redirect, url_for
+from flask_login import login_required, current_user
+from app import app, db
+from models import Habit, HabitCompletion
+
 @app.route('/analytics')
 @login_required
 def analytics():
@@ -220,10 +226,10 @@ def analytics():
         chart_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
         streak_data = {freq: {'labels': [], 'datasets': []} for freq in ['daily', 'weekly', 'monthly']}
 
-        # Generate date labels (reversed to show oldest to newest)
+        # Generate date labels (oldest to newest)
         dates = []
         for i in range(30):
-            current_date = datetime.now() - timedelta(days=29-i)  # Start from oldest date
+            current_date = datetime.now() - timedelta(days=29-i)
             dates.append(current_date.strftime('%Y-%m-%d'))
 
         for freq in ['daily', 'weekly', 'monthly']:
@@ -251,59 +257,97 @@ def analytics():
 
                 current_streak = 0
                 completed_dates = set(data['dates'])
-                last_completed_month = None
 
-                for date in dates:  # Using the ordered dates array
-                    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
-                    
-                    # Completion data
-                    completion_dataset['data'].append(1 if date in completed_dates else 0)
-                    
-                    # Streak calculation based on frequency
-                    if frequency == 'daily':
+                if frequency == 'daily':
+                    for date in dates:
                         if date in completed_dates:
                             current_streak += 1
                         else:
                             current_streak = 0
-                    elif frequency == 'weekly':
-                        # Get the start of the week for the current date
+                        streak_dataset['data'].append(current_streak)
+                        completion_dataset['data'].append(1 if date in completed_dates else 0)
+
+                elif frequency == 'weekly':
+                    # Initialize variables for weekly tracking
+                    current_week = None
+                    week_completions = {}
+                    
+                    for date in dates:
+                        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
                         week_start = date_obj - timedelta(days=date_obj.weekday())
                         week_end = week_start + timedelta(days=6)
                         
-                        # Check if there's any completion in this week
-                        week_has_completion = any(
-                            week_start <= datetime.strptime(d, '%Y-%m-%d').date() <= week_end
-                            for d in completed_dates
-                        )
-                        
-                        if week_has_completion:
-                            if date_obj.weekday() == 6:  # Only count streak on Sunday
-                                current_streak += 1
-                        else:
-                            if date_obj.weekday() == 6:  # Reset streak on Sunday if no completion
+                        # Only process once per week
+                        if week_start not in week_completions:
+                            # Check if there's any completion in this week
+                            week_has_completion = any(
+                                week_start <= datetime.strptime(d, '%Y-%m-%d').date() <= week_end
+                                for d in completed_dates
+                            )
+                            week_completions[week_start] = week_has_completion
+                            
+                            if week_has_completion:
+                                if current_week is None or (week_start - current_week).days == 7:
+                                    current_streak += 1
+                                else:
+                                    current_streak = 1
+                            else:
                                 current_streak = 0
                             
-                    elif frequency == 'monthly':
-                        current_month = (date_obj.year, date_obj.month)
-
-                        # Check if there's any completion in this month
-                        month_has_completion = any(
-                            (datetime.strptime(d, '%Y-%m-%d').date().year,
-                             datetime.strptime(d, '%Y-%m-%d').date().month) == current_month
-                            for d in completed_dates
-                        )
-
-                        # Track streak across months
-                        if month_has_completion:
-                            # If we're in a new month and there's a completion, continue the streak
-                            if current_month != last_completed_month:
-                                current_streak += 1
-                                last_completed_month = current_month
+                            current_week = week_start
+                        
+                        # For the graph, show the streak value only on the current date or last day of week
+                        if date_obj == datetime.now().date() or date_obj.weekday() == 6:
+                            streak_dataset['data'].append(current_streak)
                         else:
-                        # Reset streak only if there are no completions this month
-                            current_streak = 0
+                            streak_dataset['data'].append(None)
+                        
+                        # Set completion status for the entire week
+                        completion_dataset['data'].append(1 if week_completions[week_start] else 0)
+
+                elif frequency == 'monthly':
+                    # Initialize variables for monthly tracking
+                    current_month = None
+                    month_completions = {}
+                    last_completed_month = None
                     
-                    streak_dataset['data'].append(current_streak)
+                    for date in dates:
+                        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+                        month_key = (date_obj.year, date_obj.month)
+                        
+                        # Only process once per month
+                        if month_key not in month_completions:
+                            # Check if there's any completion in this month
+                            month_has_completion = any(
+                                (datetime.strptime(d, '%Y-%m-%d').date().year,
+                                 datetime.strptime(d, '%Y-%m-%d').date().month) == month_key
+                                for d in completed_dates
+                            )
+                            month_completions[month_key] = month_has_completion
+                            
+                            if month_has_completion:
+                                if last_completed_month is None:
+                                    current_streak = 1
+                                elif (
+                                    month_key[0] * 12 + month_key[1] == 
+                                    last_completed_month[0] * 12 + last_completed_month[1] + 1
+                                ):
+                                    current_streak += 1
+                                else:
+                                    current_streak = 1
+                                last_completed_month = month_key
+                            else:
+                                current_streak = 0
+                        
+                        # For the graph, show the streak value only on the current date or last day of month
+                        is_last_day = date_obj.day == (date_obj.replace(day=1) + timedelta(days=32)).replace(day=1).day - 1
+                        if date_obj == datetime.now().date() or is_last_day:
+                            streak_dataset['data'].append(current_streak)
+                        else:
+                            streak_dataset['data'].append(None)
+                        
+                        # Set completion status for the entire month
+                        completion_dataset['data'].append(1 if month_completions[month_key] else 0)
 
                 chart_data[frequency]['datasets'].append(completion_dataset)
                 streak_data[frequency]['datasets'].append(streak_dataset)
@@ -317,7 +361,6 @@ def analytics():
         app.logger.error(f"Error in analytics route: {e}")
         flash("An error occurred while loading the analytics.")
         return redirect(url_for('home'))
-
 
 
 
