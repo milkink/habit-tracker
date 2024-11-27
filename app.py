@@ -12,7 +12,7 @@ from io import StringIO
 
 # Initialize Flask app and configuration
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # For session management
+app.secret_key = os.getenv("SECRET_KEY") # For session management
 bcrypt = Bcrypt(app)
 
 # Configure SQLAlchemy with PostgreSQL connection string
